@@ -94,10 +94,9 @@ handle_connection(int s)
         int len = 4 + ntohl(nlen);
         void *buf = malloc(len);
         if (buf && recv(s, buf, len, MSG_WAITALL) == len) {
-            void *reply;
-            int replylen;
-            agent_query(buf, len, &reply, &replylen);
+            void *reply = agent_query(buf);
             if (reply) {
+                int replylen = 4 + ntohl(*(uint32_t *)reply);
                 send(s, reply, replylen, 0);
                 free(reply);
             } else

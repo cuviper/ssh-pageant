@@ -11,6 +11,6 @@
 #ifndef __WINPGNTC_H__
 #define __WINPGNTC_H__
 
-extern int agent_query(void *in, int inlen, void **out, int *outlen);
+extern void *agent_query(void *in);
 
 #endif /* __WINPGNTC_H__ */

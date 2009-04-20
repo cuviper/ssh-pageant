@@ -48,28 +48,26 @@
 #define AGENT_COPYDATA_ID 0x804e50ba   /* random goop */
 #define AGENT_MAX_MSGLEN  8192
 
-int agent_query(void *in, int inlen, void **out, int *outlen)
+void *
+agent_query(void *in)
 {
     HWND hwnd;
     char mapname[] = "PageantRequest12345678";
     HANDLE filemap;
-    unsigned char *p, *ret;
+    void *p, *ret = NULL;
     int id, retlen;
     COPYDATASTRUCT cds;
 
-    *out = NULL;
-    *outlen = 0;
-
     hwnd = FindWindow("Pageant", "Pageant");
     if (!hwnd)
-        return 1;                      /* *out == NULL, so failure */
+        return NULL;
     sprintf(mapname, "PageantRequest%08x", (unsigned)GetCurrentThreadId());
     filemap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
                                 0, AGENT_MAX_MSGLEN, mapname);
     if (filemap == NULL || filemap == INVALID_HANDLE_VALUE)
-        return 1;                      /* *out == NULL, so failure */
+        return NULL;
     p = MapViewOfFile(filemap, FILE_MAP_WRITE, 0, 0, 0);
-    memcpy(p, in, inlen);
+    memcpy(p, in, 4 + ntohl(*(uint32_t *)in));
     cds.dwData = AGENT_COPYDATA_ID;
     cds.cbData = 1 + strlen(mapname);
     cds.lpData = mapname;
@@ -77,14 +75,11 @@ int agent_query(void *in, int inlen, void **out, int *outlen)
     id = SendMessage(hwnd, WM_COPYDATA, (WPARAM) NULL, (LPARAM) &cds);
     if (id > 0) {
         retlen = 4 + ntohl(*(uint32_t *)p);
-        ret = (unsigned char *)malloc(retlen);
-        if (ret) {
+        ret = malloc(retlen);
+        if (ret)
             memcpy(ret, p, retlen);
-            *out = ret;
-            *outlen = retlen;
-        }
     }
     UnmapViewOfFile(p);
     CloseHandle(filemap);
-    return 1;
+    return ret;
 }
