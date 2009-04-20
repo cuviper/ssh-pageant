@@ -62,12 +62,12 @@ int agent_query(void *in, int inlen, void **out, int *outlen)
 
     hwnd = FindWindow("Pageant", "Pageant");
     if (!hwnd)
-	return 1;		       /* *out == NULL, so failure */
+        return 1;                      /* *out == NULL, so failure */
     sprintf(mapname, "PageantRequest%08x", (unsigned)GetCurrentThreadId());
     filemap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
-				0, AGENT_MAX_MSGLEN, mapname);
+                                0, AGENT_MAX_MSGLEN, mapname);
     if (filemap == NULL || filemap == INVALID_HANDLE_VALUE)
-	return 1;		       /* *out == NULL, so failure */
+        return 1;                      /* *out == NULL, so failure */
     p = MapViewOfFile(filemap, FILE_MAP_WRITE, 0, 0, 0);
     memcpy(p, in, inlen);
     cds.dwData = AGENT_COPYDATA_ID;
@@ -76,13 +76,13 @@ int agent_query(void *in, int inlen, void **out, int *outlen)
 
     id = SendMessage(hwnd, WM_COPYDATA, (WPARAM) NULL, (LPARAM) &cds);
     if (id > 0) {
-	retlen = 4 + ntohl(*(uint32_t *)p);
-	ret = (unsigned char *)malloc(retlen);
-	if (ret) {
-	    memcpy(ret, p, retlen);
-	    *out = ret;
-	    *outlen = retlen;
-	}
+        retlen = 4 + ntohl(*(uint32_t *)p);
+        ret = (unsigned char *)malloc(retlen);
+        if (ret) {
+            memcpy(ret, p, retlen);
+            *out = ret;
+            *outlen = retlen;
+        }
     }
     UnmapViewOfFile(p);
     CloseHandle(filemap);

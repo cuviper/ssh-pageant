@@ -53,8 +53,8 @@ open_auth_socket()
 
     strlcpy(tempdir, "/tmp/ssh-XXXXXX", sizeof(tempdir));
     if (!mkdtemp(tempdir)) {
-	perror("mkdtemp");
-	cleanup_exit(1);
+        perror("mkdtemp");
+        cleanup_exit(1);
     }
 
     snprintf(sockpath, sizeof(sockpath), "%s/agent.%d", tempdir, getpid());
@@ -62,23 +62,23 @@ open_auth_socket()
 
     fd = socket(PF_LOCAL, SOCK_STREAM, 0);
     if (fd < 0) {
-	perror("socket");
-	cleanup_exit(1);
+        perror("socket");
+        cleanup_exit(1);
     }
 
     addr.sun_family = AF_UNIX;
     strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
     um = umask(S_IXUSR | S_IRWXG | S_IRWXO);
     if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-	perror("bind");
-	umask(um);
-	cleanup_exit(1);
+        perror("bind");
+        umask(um);
+        cleanup_exit(1);
     }
     umask(um);
 
     if (listen(fd, 128) < 0) {
-	perror("listen");
-	cleanup_exit(1);
+        perror("listen");
+        cleanup_exit(1);
     }
 
     return fd;
@@ -126,8 +126,8 @@ daemonize()
     }
 
     if (setsid() < 0) {
-	perror("setsid");
-	cleanup_exit(1);
+        perror("setsid");
+        cleanup_exit(1);
     }
 
     fclose(stdin);
