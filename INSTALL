@@ -1,0 +1,2 @@
+To compile ssh-pageant, just run 'make'.
+To install, copy ssh-pageant.exe to an appropriate place.
