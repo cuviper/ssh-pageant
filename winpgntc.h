@@ -11,6 +11,12 @@
 #ifndef __WINPGNTC_H__
 #define __WINPGNTC_H__
 
+#include <arpa/inet.h>
+
 extern void *agent_query(void *in);
+
+static inline uint32_t msglen(void *p) {
+    return 4 + ntohl(*(uint32_t *)p);
+}
 
 #endif /* __WINPGNTC_H__ */

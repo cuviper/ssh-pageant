@@ -8,7 +8,6 @@
  * version 3 of the License, or (at your option) any later version.
  */
 
-#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -91,13 +90,12 @@ handle_connection(int s)
     static char reply_error[5] = { 0, 0, 0, 1, SSH_AGENT_FAILURE };
     uint32_t nlen;
     while (recv(s, &nlen, 4, MSG_PEEK | MSG_WAITALL) == 4) {
-        int len = 4 + ntohl(nlen);
+        int len = msglen(&nlen);
         void *buf = malloc(len);
         if (buf && recv(s, buf, len, MSG_WAITALL) == len) {
             void *reply = agent_query(buf);
             if (reply) {
-                int replylen = 4 + ntohl(*(uint32_t *)reply);
-                send(s, reply, replylen, 0);
+                send(s, reply, msglen(reply), 0);
                 free(reply);
             } else
                 send(s, &reply_error, sizeof(reply_error), 0);

@@ -38,7 +38,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
@@ -55,7 +54,7 @@ agent_query(void *in)
     char mapname[] = "PageantRequest12345678";
     HANDLE filemap;
     void *p, *ret = NULL;
-    int id, retlen;
+    int id;
     COPYDATASTRUCT cds;
 
     hwnd = FindWindow("Pageant", "Pageant");
@@ -67,17 +66,16 @@ agent_query(void *in)
     if (filemap == NULL || filemap == INVALID_HANDLE_VALUE)
         return NULL;
     p = MapViewOfFile(filemap, FILE_MAP_WRITE, 0, 0, 0);
-    memcpy(p, in, 4 + ntohl(*(uint32_t *)in));
+    memcpy(p, in, msglen(in));
     cds.dwData = AGENT_COPYDATA_ID;
     cds.cbData = 1 + strlen(mapname);
     cds.lpData = mapname;
 
     id = SendMessage(hwnd, WM_COPYDATA, (WPARAM) NULL, (LPARAM) &cds);
     if (id > 0) {
-        retlen = 4 + ntohl(*(uint32_t *)p);
-        ret = malloc(retlen);
+        ret = malloc(msglen(p));
         if (ret)
-            memcpy(ret, p, retlen);
+            memcpy(ret, p, msglen(p));
     }
     UnmapViewOfFile(p);
     CloseHandle(filemap);
