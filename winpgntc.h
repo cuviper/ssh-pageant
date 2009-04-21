@@ -13,6 +13,8 @@
 
 #include <arpa/inet.h>
 
+#define AGENT_MAX_MSGLEN  8192
+
 extern void *agent_query(void *in);
 
 static inline uint32_t msglen(void *p) {

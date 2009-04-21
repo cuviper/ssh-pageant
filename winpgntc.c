@@ -45,7 +45,6 @@
 #include "winpgntc.h"
 
 #define AGENT_COPYDATA_ID 0x804e50ba   /* random goop */
-#define AGENT_MAX_MSGLEN  8192
 
 void *
 agent_query(void *in)

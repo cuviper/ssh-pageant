@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -21,6 +22,11 @@
 
 
 #define SSH_AGENT_FAILURE 5
+
+
+#define FD_FOREACH(fd, set) \
+    for (fd = 0; fd < FD_SETSIZE; ++fd) \
+        if (FD_ISSET(fd, set))
 
 
 static char tempdir[UNIX_PATH_LEN] = "";
@@ -85,28 +91,6 @@ open_auth_socket()
 
 
 static void
-handle_connection(int s)
-{
-    static char reply_error[5] = { 0, 0, 0, 1, SSH_AGENT_FAILURE };
-    uint32_t nlen;
-    while (recv(s, &nlen, 4, MSG_PEEK | MSG_WAITALL) == 4) {
-        int len = msglen(&nlen);
-        void *buf = malloc(len);
-        if (buf && recv(s, buf, len, MSG_WAITALL) == len) {
-            void *reply = agent_query(buf);
-            if (reply) {
-                send(s, reply, msglen(reply), 0);
-                free(reply);
-            } else
-                send(s, &reply_error, sizeof(reply_error), 0);
-        }
-        free(buf);
-    }
-    close(s);
-}
-
-
-static void
 daemonize()
 {
     pid_t pid = fork();
@@ -136,15 +120,61 @@ daemonize()
 int
 main()
 {
-    int sockfd, s;
+    static char reply_error[5] = { 0, 0, 0, 1, SSH_AGENT_FAILURE };
+
+    int sockfd, fd;
+    fd_set read_set, write_set;
+    char buf[AGENT_MAX_MSGLEN];
+    void *sendbuf[FD_SETSIZE] = { NULL };
+
+    FD_ZERO(&read_set);
+    FD_ZERO(&write_set);
 
     signal(SIGINT, cleanup_signal);
     signal(SIGHUP, cleanup_signal);
     signal(SIGTERM, cleanup_signal);
 
     sockfd = open_auth_socket();
+    FD_SET(sockfd, &read_set);
+
     daemonize();
-    while ((s = accept(sockfd, NULL, 0)) >= 0)
-        handle_connection(s);
-    cleanup_exit(1);
+
+    while (1) {
+        fd_set do_read_set = read_set;
+        fd_set do_write_set = write_set;
+        if (select(FD_SETSIZE, &do_read_set, &do_write_set, NULL, NULL) < 0)
+            cleanup_exit(1);
+
+        FD_FOREACH(fd, &do_read_set) {
+            if (fd == sockfd) {
+                int s = accept(sockfd, NULL, 0);
+                if (s >= FD_SETSIZE)
+                    close(s);
+                else if (s >= 0)
+                    FD_SET(s, &read_set);
+            }
+            else {
+                int len = read(fd, buf, sizeof(buf));
+                if (len >= 4 && len == (int)msglen(buf)) {
+                    sendbuf[fd] = agent_query(buf);
+                    FD_SET(fd, &write_set);
+                }
+                else
+                    close(fd);
+                FD_CLR(fd, &read_set);
+            }
+        }
+
+        FD_FOREACH(fd, &do_write_set) {
+            void *reply = sendbuf[fd] ?: &reply_error;
+            int len = write(fd, reply, msglen(reply));
+            if (len == (int)msglen(reply))
+                FD_SET(fd, &read_set);
+            else
+                close(fd);
+            FD_CLR(fd, &write_set);
+            free(sendbuf[fd]);
+            sendbuf[fd] = NULL;
+        }
+    }
 }
