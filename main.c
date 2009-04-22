@@ -97,7 +97,6 @@ daemonize()
     if (pid < 0) {
         perror("fork");
         cleanup_exit(1);
-        exit(1);
     }
     if (pid > 0) {
         printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
