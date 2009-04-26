@@ -8,6 +8,8 @@
  * version 3 of the License, or (at your option) any later version.
  */
 
+#include <getopt.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -117,14 +119,49 @@ daemonize()
 
 
 int
-main()
+main(int argc, char *argv[])
 {
     static char reply_error[5] = { 0, 0, 0, 1, SSH_AGENT_FAILURE };
+
+    static struct option long_options[] = {
+        { "help", no_argument, 0, 'h' },
+        { 0, 0, 0, 0 }
+    };
 
     int sockfd, fd;
     fd_set read_set, write_set;
     char buf[AGENT_MAX_MSGLEN];
     void *sendbuf[FD_SETSIZE] = { NULL };
+
+    int opt;
+    const char *prog = basename(argv[0]);
+    while ((opt = getopt_long(argc, argv, "+h",
+                              long_options, NULL)) != -1)
+        switch (opt) {
+            case 'h':
+                printf("Usage: %s [options]\n", prog);
+                printf("Options:\n");
+                printf("  -h, --help    Display this information\n");
+                return 0;
+
+            case '?':
+                fprintf(stderr, "Try '%s --help' for more information\n", prog);
+                return 1;
+
+            default:
+                // shouldn't get here
+                fprintf(stderr, "getopt returned unknown code %#X\n", opt);
+                return 2;
+        }
+
+    if (optind < argc) {
+        fprintf(stderr, "%s: extra arguments aren't handled --", prog);
+        while (optind < argc)
+            fprintf(stderr, " %s", argv[optind++]);
+        fprintf(stderr, "\n");
+        fprintf(stderr, "Try '%s --help' for more information\n", prog);
+        return 1;
+    }
 
     FD_ZERO(&read_set);
     FD_ZERO(&write_set);
