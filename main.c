@@ -37,18 +37,22 @@ static char sockpath[UNIX_PATH_LEN] = "";
 
 
 __attribute__((noreturn)) static void
-cleanup_exit(int ret)
+cleanup_exit(const char *prefix)
 {
     unlink(sockpath);
     rmdir(tempdir);
-    exit(ret);
+    if (prefix) {
+        perror(prefix);
+        exit(1);
+    }
+    exit(0);
 }
 
 
 static void
 cleanup_signal(int sig __attribute__((unused)))
 {
-    cleanup_exit(0);
+    cleanup_exit(NULL);
 }
 
 
@@ -57,37 +61,29 @@ open_auth_socket()
 {
     struct sockaddr_un addr;
     mode_t um;
-    int fd;
+    int fd, rc;
 
     strlcpy(tempdir, "/tmp/ssh-XXXXXX", sizeof(tempdir));
-    if (!mkdtemp(tempdir)) {
-        perror("mkdtemp");
-        cleanup_exit(1);
-    }
+    if (!mkdtemp(tempdir))
+        cleanup_exit("mkdtemp");
 
     snprintf(sockpath, sizeof(sockpath), "%s/agent.%d", tempdir, getpid());
     sockpath[sizeof(sockpath) - 1] = '\0';
 
     fd = socket(PF_LOCAL, SOCK_STREAM, 0);
-    if (fd < 0) {
-        perror("socket");
-        cleanup_exit(1);
-    }
+    if (fd < 0)
+        cleanup_exit("socket");
 
     addr.sun_family = AF_UNIX;
     strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
     um = umask(S_IXUSR | S_IRWXG | S_IRWXO);
-    if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        perror("bind");
-        umask(um);
-        cleanup_exit(1);
-    }
+    rc = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
     umask(um);
+    if (rc < 0)
+        cleanup_exit("bind");
 
-    if (listen(fd, 128) < 0) {
-        perror("listen");
-        cleanup_exit(1);
-    }
+    if (listen(fd, 128) < 0)
+        cleanup_exit("listen");
 
     return fd;
 }
@@ -146,17 +142,13 @@ main(int argc, char *argv[])
         setenv("SSH_PAGEANT_PID", pidstr, 1);
         signal(SIGCHLD, cleanup_signal);
         if (spawnvp(_P_NOWAIT, argv[optind],
-                    (const char **)argv + optind) < 0) {
-            perror(argv[optind]);
-            cleanup_exit(1);
-        }
+                    (const char **)argv + optind) < 0)
+            cleanup_exit(argv[optind]);
     }
     else {
         pid_t pid = fork();
-        if (pid < 0) {
-            perror("fork");
-            cleanup_exit(1);
-        }
+        if (pid < 0)
+            cleanup_exit("fork");
         if (pid > 0) {
             printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
             printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
@@ -164,10 +156,8 @@ main(int argc, char *argv[])
             exit(0);
         }
 
-        if (setsid() < 0) {
-            perror("setsid");
-            cleanup_exit(1);
-        }
+        if (setsid() < 0)
+            cleanup_exit("setsid");
 
         fclose(stdin);
         fclose(stdout);
@@ -178,7 +168,7 @@ main(int argc, char *argv[])
         fd_set do_read_set = read_set;
         fd_set do_write_set = write_set;
         if (select(FD_SETSIZE, &do_read_set, &do_write_set, NULL, NULL) < 0)
-            cleanup_exit(1);
+            cleanup_exit("select");
 
         FD_FOREACH(fd, &do_read_set) {
             if (fd == sockfd) {
