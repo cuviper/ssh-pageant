@@ -156,7 +156,7 @@ main(int argc, char *argv[])
     int opt_debug = 0;
     int opt_csh = getenv("SHELL") && strstr(getenv("SHELL"), "csh");
 
-    while ((opt = getopt_long(argc, argv, "+hd",
+    while ((opt = getopt_long(argc, argv, "+hds",
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
@@ -164,10 +164,15 @@ main(int argc, char *argv[])
                 printf("Options:\n");
                 printf("  -h, --help    Display this information\n");
                 printf("  -d            Enable debug mode\n");
+                printf("  -s            Use Bourne-style shell commands\n");
                 return 0;
 
             case 'd':
                 opt_debug = 1;
+                break;
+
+            case 's':
+                opt_csh = 0;
                 break;
 
             case '?':
