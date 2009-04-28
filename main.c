@@ -150,17 +150,24 @@ main(int argc, char *argv[])
     };
 
     int sockfd;
-    int opt;
     const char *prog = basename(argv[0]);
 
-    while ((opt = getopt_long(argc, argv, "+h",
+    int opt;
+    int opt_debug = 0;
+
+    while ((opt = getopt_long(argc, argv, "+hd",
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
                 printf("Usage: %s [options] [command [arg ...]]\n", prog);
                 printf("Options:\n");
                 printf("  -h, --help    Display this information\n");
+                printf("  -d            Enable debug mode\n");
                 return 0;
+
+            case 'd':
+                opt_debug = 1;
+                break;
 
             case '?':
                 fprintf(stderr, "Try '%s --help' for more information\n", prog);
@@ -189,23 +196,23 @@ main(int argc, char *argv[])
             cleanup_exit(argv[optind]);
     }
     else {
-        pid_t pid = fork();
+        pid_t pid = opt_debug ? getpid() : fork();
         if (pid < 0)
             cleanup_exit("fork");
         if (pid > 0) {
             printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
             printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
             //printf("echo ssh-pageant pid %d\n", pid);
-            exit(0);
+            if (!opt_debug)
+                exit(0);
         }
-
-        if (setsid() < 0)
+        else if (setsid() < 0)
             cleanup_exit("setsid");
-
-        fclose(stdin);
-        fclose(stdout);
-        fclose(stderr);
+        else
+            fclose(stderr);
     }
+    fclose(stdin);
+    fclose(stdout);
 
     do_agent_loop(sockfd);
 }
