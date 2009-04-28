@@ -10,6 +10,7 @@
 
 #include <getopt.h>
 #include <libgen.h>
+#include <process.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,32 +93,6 @@ open_auth_socket()
 }
 
 
-static void
-daemonize()
-{
-    pid_t pid = fork();
-    if (pid < 0) {
-        perror("fork");
-        cleanup_exit(1);
-    }
-    if (pid > 0) {
-        printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
-        printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
-        //printf("echo ssh-pageant pid %d\n", pid);
-        exit(0);
-    }
-
-    if (setsid() < 0) {
-        perror("setsid");
-        cleanup_exit(1);
-    }
-
-    fclose(stdin);
-    fclose(stdout);
-    fclose(stderr);
-}
-
-
 int
 main(int argc, char *argv[])
 {
@@ -139,7 +114,7 @@ main(int argc, char *argv[])
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
-                printf("Usage: %s [options]\n", prog);
+                printf("Usage: %s [options] [command [arg ...]]\n", prog);
                 printf("Options:\n");
                 printf("  -h, --help    Display this information\n");
                 return 0;
@@ -154,15 +129,6 @@ main(int argc, char *argv[])
                 return 2;
         }
 
-    if (optind < argc) {
-        fprintf(stderr, "%s: extra arguments aren't handled --", prog);
-        while (optind < argc)
-            fprintf(stderr, " %s", argv[optind++]);
-        fprintf(stderr, "\n");
-        fprintf(stderr, "Try '%s --help' for more information\n", prog);
-        return 1;
-    }
-
     FD_ZERO(&read_set);
     FD_ZERO(&write_set);
 
@@ -173,7 +139,40 @@ main(int argc, char *argv[])
     sockfd = open_auth_socket();
     FD_SET(sockfd, &read_set);
 
-    daemonize();
+    if (optind < argc) {
+        char pidstr[16];
+        snprintf(pidstr, sizeof(pidstr), "%d", getpid());
+        setenv("SSH_AUTH_SOCK", sockpath, 1);
+        setenv("SSH_PAGEANT_PID", pidstr, 1);
+        signal(SIGCHLD, cleanup_signal);
+        if (spawnvp(_P_NOWAIT, argv[optind],
+                    (const char **)argv + optind) < 0) {
+            perror(argv[optind]);
+            cleanup_exit(1);
+        }
+    }
+    else {
+        pid_t pid = fork();
+        if (pid < 0) {
+            perror("fork");
+            cleanup_exit(1);
+        }
+        if (pid > 0) {
+            printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
+            printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
+            //printf("echo ssh-pageant pid %d\n", pid);
+            exit(0);
+        }
+
+        if (setsid() < 0) {
+            perror("setsid");
+            cleanup_exit(1);
+        }
+
+        fclose(stdin);
+        fclose(stdout);
+        fclose(stderr);
+    }
 
     while (1) {
         fd_set do_read_set = read_set;
