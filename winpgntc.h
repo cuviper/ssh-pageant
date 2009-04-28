@@ -17,7 +17,7 @@
 
 extern void *agent_query(void *in);
 
-static inline uint32_t msglen(void *p) {
+static inline int msglen(void *p) {
     return 4 + ntohl(*(uint32_t *)p);
 }
 
