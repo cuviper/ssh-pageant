@@ -11,6 +11,7 @@
 #include <getopt.h>
 #include <libgen.h>
 #include <process.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -154,9 +155,10 @@ main(int argc, char *argv[])
 
     int opt;
     int opt_debug = 0;
+    int opt_kill = 0;
     int opt_csh = getenv("SHELL") && strstr(getenv("SHELL"), "csh");
 
-    while ((opt = getopt_long(argc, argv, "+hdcs",
+    while ((opt = getopt_long(argc, argv, "+hdcsk",
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
@@ -166,6 +168,7 @@ main(int argc, char *argv[])
                 printf("  -d            Enable debug mode\n");
                 printf("  -c            Use C-style shell commands\n");
                 printf("  -s            Use Bourne-style shell commands\n");
+                printf("  -k            Kill the current %s\n", prog);
                 return 0;
 
             case 'd':
@@ -180,6 +183,10 @@ main(int argc, char *argv[])
                 opt_csh = 0;
                 break;
 
+            case 'k':
+                opt_kill = 1;
+                break;
+
             case '?':
                 fprintf(stderr, "Try '%s --help' for more information\n", prog);
                 return 1;
@@ -189,6 +196,28 @@ main(int argc, char *argv[])
                 fprintf(stderr, "getopt returned unknown code %#X\n", opt);
                 return 2;
         }
+
+    if (opt_kill) {
+        const char *pidenv = getenv("SSH_PAGEANT_PID");
+        if (!pidenv) {
+            fprintf(stderr, "SSH_PAGEANT_PID not set, cannot kill agent\n");
+            return 1;
+        }
+        if (kill(atoi(pidenv), SIGTERM) < 0) {
+            perror("kill");
+            return 1;
+        }
+        if (opt_csh) {
+            printf("unsetenv SSH_AUTH_SOCK;\n");
+            printf("unsetenv SSH_PAGEANT_PID;\n");
+        }
+        else {
+            printf("unset SSH_AUTH_SOCK;\n");
+            printf("unset SSH_PAGEANT_PID;\n");
+        }
+        //printf("echo ssh-pageant pid %d killed;\n", atoi(pidenv));
+        return 0;
+    }
 
     signal(SIGINT, cleanup_signal);
     signal(SIGHUP, cleanup_signal);
@@ -214,7 +243,8 @@ main(int argc, char *argv[])
             if (opt_csh) {
                 printf("setenv SSH_AUTH_SOCK %s;\n", sockpath);
                 printf("setenv SSH_PAGEANT_PID %d;\n", pid);
-            } else {
+            }
+            else {
                 printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
                 printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
             }
