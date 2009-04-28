@@ -154,6 +154,7 @@ main(int argc, char *argv[])
 
     int opt;
     int opt_debug = 0;
+    int opt_csh = getenv("SHELL") && strstr(getenv("SHELL"), "csh");
 
     while ((opt = getopt_long(argc, argv, "+hd",
                               long_options, NULL)) != -1)
@@ -200,9 +201,14 @@ main(int argc, char *argv[])
         if (pid < 0)
             cleanup_exit("fork");
         if (pid > 0) {
-            printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
-            printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
-            //printf("echo ssh-pageant pid %d\n", pid);
+            if (opt_csh) {
+                printf("setenv SSH_AUTH_SOCK %s;\n", sockpath);
+                printf("setenv SSH_PAGEANT_PID %d;\n", pid);
+            } else {
+                printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
+                printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
+            }
+            //printf("echo ssh-pageant pid %d;\n", pid);
             if (!opt_debug)
                 exit(0);
         }
