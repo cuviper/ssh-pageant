@@ -179,13 +179,13 @@ main(int argc, char *argv[])
     sockfd = open_auth_socket();
 
     if (optind < argc) {
+        const char **subargv = (const char **)argv + optind;
         char pidstr[16];
         snprintf(pidstr, sizeof(pidstr), "%d", getpid());
         setenv("SSH_AUTH_SOCK", sockpath, 1);
         setenv("SSH_PAGEANT_PID", pidstr, 1);
         signal(SIGCHLD, cleanup_signal);
-        if (spawnvp(_P_NOWAIT, argv[optind],
-                    (const char **)argv + optind) < 0)
+        if (spawnvp(_P_NOWAIT, subargv[0], subargv) < 0)
             cleanup_exit(argv[optind]);
     }
     else {
