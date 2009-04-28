@@ -220,7 +220,7 @@ main(int argc, char *argv[])
             }
             //printf("echo ssh-pageant pid %d;\n", pid);
             if (!opt_debug)
-                exit(0);
+                return 0;
         }
         else if (setsid() < 0)
             cleanup_exit("setsid");
