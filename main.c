@@ -37,13 +37,11 @@ static char sockpath[UNIX_PATH_LEN] = "";
 __attribute__((noreturn)) static void
 cleanup_exit(const char *prefix)
 {
+    if (prefix)
+        perror(prefix);
     unlink(sockpath);
     rmdir(tempdir);
-    if (prefix) {
-        perror(prefix);
-        exit(1);
-    }
-    exit(0);
+    exit(prefix != NULL);
 }
 
 
@@ -59,7 +57,7 @@ open_auth_socket()
 {
     struct sockaddr_un addr;
     mode_t um;
-    int fd, rc;
+    int fd;
 
     strlcpy(tempdir, "/tmp/ssh-XXXXXX", sizeof(tempdir));
     if (!mkdtemp(tempdir))
@@ -75,10 +73,9 @@ open_auth_socket()
     addr.sun_family = AF_UNIX;
     strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
     um = umask(S_IXUSR | S_IRWXG | S_IRWXO);
-    rc = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
-    umask(um);
-    if (rc < 0)
+    if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
         cleanup_exit("bind");
+    umask(um);
 
     if (listen(fd, 128) < 0)
         cleanup_exit("listen");
