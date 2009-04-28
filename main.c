@@ -24,9 +24,6 @@
 #include "winpgntc.h"
 
 
-#define SSH_AGENT_FAILURE 5
-
-
 #define FD_FOREACH(fd, set) \
     for (fd = 0; fd < FD_SETSIZE; ++fd) \
         if (FD_ISSET(fd, set))
