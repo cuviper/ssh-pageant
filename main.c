@@ -89,80 +89,19 @@ open_auth_socket()
 }
 
 
-int
-main(int argc, char *argv[])
+__attribute__((noreturn)) static void
+do_agent_loop(int sockfd)
 {
     static char reply_error[5] = { 0, 0, 0, 1, SSH_AGENT_FAILURE };
 
-    static struct option long_options[] = {
-        { "help", no_argument, 0, 'h' },
-        { 0, 0, 0, 0 }
-    };
-
-    int sockfd, fd;
+    int fd;
     fd_set read_set, write_set;
     char buf[AGENT_MAX_MSGLEN];
     void *sendbuf[FD_SETSIZE] = { NULL };
 
-    int opt;
-    const char *prog = basename(argv[0]);
-    while ((opt = getopt_long(argc, argv, "+h",
-                              long_options, NULL)) != -1)
-        switch (opt) {
-            case 'h':
-                printf("Usage: %s [options] [command [arg ...]]\n", prog);
-                printf("Options:\n");
-                printf("  -h, --help    Display this information\n");
-                return 0;
-
-            case '?':
-                fprintf(stderr, "Try '%s --help' for more information\n", prog);
-                return 1;
-
-            default:
-                // shouldn't get here
-                fprintf(stderr, "getopt returned unknown code %#X\n", opt);
-                return 2;
-        }
-
     FD_ZERO(&read_set);
     FD_ZERO(&write_set);
-
-    signal(SIGINT, cleanup_signal);
-    signal(SIGHUP, cleanup_signal);
-    signal(SIGTERM, cleanup_signal);
-
-    sockfd = open_auth_socket();
     FD_SET(sockfd, &read_set);
-
-    if (optind < argc) {
-        char pidstr[16];
-        snprintf(pidstr, sizeof(pidstr), "%d", getpid());
-        setenv("SSH_AUTH_SOCK", sockpath, 1);
-        setenv("SSH_PAGEANT_PID", pidstr, 1);
-        signal(SIGCHLD, cleanup_signal);
-        if (spawnvp(_P_NOWAIT, argv[optind],
-                    (const char **)argv + optind) < 0)
-            cleanup_exit(argv[optind]);
-    }
-    else {
-        pid_t pid = fork();
-        if (pid < 0)
-            cleanup_exit("fork");
-        if (pid > 0) {
-            printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
-            printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
-            //printf("echo ssh-pageant pid %d\n", pid);
-            exit(0);
-        }
-
-        if (setsid() < 0)
-            cleanup_exit("setsid");
-
-        fclose(stdin);
-        fclose(stdout);
-        fclose(stderr);
-    }
 
     while (1) {
         fd_set do_read_set = read_set;
@@ -202,4 +141,74 @@ main(int argc, char *argv[])
             sendbuf[fd] = NULL;
         }
     }
+}
+
+
+int
+main(int argc, char *argv[])
+{
+    static struct option long_options[] = {
+        { "help", no_argument, 0, 'h' },
+        { 0, 0, 0, 0 }
+    };
+
+    int sockfd;
+    int opt;
+    const char *prog = basename(argv[0]);
+
+    while ((opt = getopt_long(argc, argv, "+h",
+                              long_options, NULL)) != -1)
+        switch (opt) {
+            case 'h':
+                printf("Usage: %s [options] [command [arg ...]]\n", prog);
+                printf("Options:\n");
+                printf("  -h, --help    Display this information\n");
+                return 0;
+
+            case '?':
+                fprintf(stderr, "Try '%s --help' for more information\n", prog);
+                return 1;
+
+            default:
+                // shouldn't get here
+                fprintf(stderr, "getopt returned unknown code %#X\n", opt);
+                return 2;
+        }
+
+    signal(SIGINT, cleanup_signal);
+    signal(SIGHUP, cleanup_signal);
+    signal(SIGTERM, cleanup_signal);
+
+    sockfd = open_auth_socket();
+
+    if (optind < argc) {
+        char pidstr[16];
+        snprintf(pidstr, sizeof(pidstr), "%d", getpid());
+        setenv("SSH_AUTH_SOCK", sockpath, 1);
+        setenv("SSH_PAGEANT_PID", pidstr, 1);
+        signal(SIGCHLD, cleanup_signal);
+        if (spawnvp(_P_NOWAIT, argv[optind],
+                    (const char **)argv + optind) < 0)
+            cleanup_exit(argv[optind]);
+    }
+    else {
+        pid_t pid = fork();
+        if (pid < 0)
+            cleanup_exit("fork");
+        if (pid > 0) {
+            printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
+            printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
+            //printf("echo ssh-pageant pid %d\n", pid);
+            exit(0);
+        }
+
+        if (setsid() < 0)
+            cleanup_exit("setsid");
+
+        fclose(stdin);
+        fclose(stdout);
+        fclose(stderr);
+    }
+
+    do_agent_loop(sockfd);
 }
