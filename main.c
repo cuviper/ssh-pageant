@@ -59,16 +59,16 @@ open_auth_socket()
     mode_t um;
     int fd;
 
-    strlcpy(tempdir, "/tmp/ssh-XXXXXX", sizeof(tempdir));
-    if (!mkdtemp(tempdir))
-        cleanup_exit("mkdtemp");
-
-    snprintf(sockpath, sizeof(sockpath), "%s/agent.%d", tempdir, getpid());
-    sockpath[sizeof(sockpath) - 1] = '\0';
-
     fd = socket(PF_LOCAL, SOCK_STREAM, 0);
     if (fd < 0)
         cleanup_exit("socket");
+
+    if (!sockpath[0]) {
+        strlcpy(tempdir, "/tmp/ssh-XXXXXX", sizeof(tempdir));
+        if (!mkdtemp(tempdir))
+            cleanup_exit("mkdtemp");
+        snprintf(sockpath, sizeof(sockpath), "%s/agent.%d", tempdir, getpid());
+    }
 
     addr.sun_family = AF_UNIX;
     strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
@@ -155,7 +155,7 @@ main(int argc, char *argv[])
     int opt_kill = 0;
     int opt_csh = getenv("SHELL") && strstr(getenv("SHELL"), "csh");
 
-    while ((opt = getopt_long(argc, argv, "+hdcskt:",
+    while ((opt = getopt_long(argc, argv, "+hcskda:t:",
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
@@ -166,12 +166,9 @@ main(int argc, char *argv[])
                 printf("  -s          Use Bourne-style shell commands\n");
                 printf("  -k          Kill the current %s\n", prog);
                 printf("  -d          Enable debug mode\n");
+                printf("  -a SOCKET   Bind to a specific socket address\n");
                 printf("  -t TIME     Limit key lifetime (not implemented)\n");
                 return 0;
-
-            case 'd':
-                opt_debug = 1;
-                break;
 
             case 'c':
                 opt_csh = 1;
@@ -183,6 +180,18 @@ main(int argc, char *argv[])
 
             case 'k':
                 opt_kill = 1;
+                break;
+
+            case 'd':
+                opt_debug = 1;
+                break;
+
+            case 'a':
+                if (strlen(optarg) + 1 > sizeof(sockpath)) {
+                    fprintf(stderr, "%s: socket address is too long\n", prog);
+                    return 1;
+                }
+                strcpy(sockpath, optarg);
                 break;
 
             case 't':
