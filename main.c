@@ -155,17 +155,18 @@ main(int argc, char *argv[])
     int opt_kill = 0;
     int opt_csh = getenv("SHELL") && strstr(getenv("SHELL"), "csh");
 
-    while ((opt = getopt_long(argc, argv, "+hdcsk",
+    while ((opt = getopt_long(argc, argv, "+hdcskt:",
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
                 printf("Usage: %s [options] [command [arg ...]]\n", prog);
                 printf("Options:\n");
-                printf("  -h, --help    Display this information\n");
-                printf("  -d            Enable debug mode\n");
-                printf("  -c            Use C-style shell commands\n");
-                printf("  -s            Use Bourne-style shell commands\n");
-                printf("  -k            Kill the current %s\n", prog);
+                printf("  -h, --help  Display this information\n");
+                printf("  -c          Use C-style shell commands\n");
+                printf("  -s          Use Bourne-style shell commands\n");
+                printf("  -k          Kill the current %s\n", prog);
+                printf("  -d          Enable debug mode\n");
+                printf("  -t TIME     Limit key lifetime (not implemented)\n");
                 return 0;
 
             case 'd':
@@ -182,6 +183,10 @@ main(int argc, char *argv[])
 
             case 'k':
                 opt_kill = 1;
+                break;
+
+            case 't':
+                fprintf(stderr, "%s: option is not implemented -- t\n", prog);
                 break;
 
             case '?':
