@@ -215,12 +215,14 @@ main(int argc, char *argv[])
         }
 
     if (opt_kill) {
+        pid_t pid;
         const char *pidenv = getenv("SSH_PAGEANT_PID");
         if (!pidenv) {
             fprintf(stderr, "SSH_PAGEANT_PID not set, cannot kill agent\n");
             return 1;
         }
-        if (kill(atoi(pidenv), SIGTERM) < 0) {
+        pid = atoi(pidenv);
+        if (kill(pid, SIGTERM) < 0) {
             perror("kill");
             return 1;
         }
@@ -233,7 +235,7 @@ main(int argc, char *argv[])
             printf("unset SSH_PAGEANT_PID;\n");
         }
         if (!opt_quiet)
-            printf("echo ssh-pageant pid %d killed;\n", atoi(pidenv));
+            printf("echo ssh-pageant pid %d killed;\n", pid);
         return 0;
     }
 
