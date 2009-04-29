@@ -154,6 +154,7 @@ main(int argc, char *argv[])
     int opt_debug = 0;
     int opt_quiet = 0;
     int opt_kill = 0;
+    int opt_lifetime = 0;
     int opt_csh = getenv("SHELL") && strstr(getenv("SHELL"), "csh");
 
     while ((opt = getopt_long(argc, argv, "+hcskdqa:t:",
@@ -201,7 +202,7 @@ main(int argc, char *argv[])
                 break;
 
             case 't':
-                fprintf(stderr, "%s: option is not implemented -- t\n", prog);
+                opt_lifetime = 1;
                 break;
 
             case '?':
@@ -238,6 +239,9 @@ main(int argc, char *argv[])
             printf("echo ssh-pageant pid %d killed;\n", pid);
         return 0;
     }
+
+    if (opt_lifetime && !opt_quiet)
+        fprintf(stderr, "%s: option is not implemented -- t\n", prog);
 
     signal(SIGINT, cleanup_signal);
     signal(SIGHUP, cleanup_signal);
