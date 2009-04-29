@@ -152,10 +152,11 @@ main(int argc, char *argv[])
 
     int opt;
     int opt_debug = 0;
+    int opt_quiet = 0;
     int opt_kill = 0;
     int opt_csh = getenv("SHELL") && strstr(getenv("SHELL"), "csh");
 
-    while ((opt = getopt_long(argc, argv, "+hcskda:t:",
+    while ((opt = getopt_long(argc, argv, "+hcskdqa:t:",
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
@@ -166,6 +167,7 @@ main(int argc, char *argv[])
                 printf("  -s          Use Bourne-style shell commands\n");
                 printf("  -k          Kill the current %s\n", prog);
                 printf("  -d          Enable debug mode\n");
+                printf("  -q          Enable quiet mode\n");
                 printf("  -a SOCKET   Bind to a specific socket address\n");
                 printf("  -t TIME     Limit key lifetime (not implemented)\n");
                 return 0;
@@ -184,6 +186,10 @@ main(int argc, char *argv[])
 
             case 'd':
                 opt_debug = 1;
+                break;
+
+            case 'q':
+                opt_quiet = 1;
                 break;
 
             case 'a':
@@ -226,7 +232,8 @@ main(int argc, char *argv[])
             printf("unset SSH_AUTH_SOCK;\n");
             printf("unset SSH_PAGEANT_PID;\n");
         }
-        //printf("echo ssh-pageant pid %d killed;\n", atoi(pidenv));
+        if (!opt_quiet)
+            printf("echo ssh-pageant pid %d killed;\n", atoi(pidenv));
         return 0;
     }
 
@@ -259,7 +266,8 @@ main(int argc, char *argv[])
                 printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
                 printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
             }
-            //printf("echo ssh-pageant pid %d;\n", pid);
+            if (!opt_quiet)
+                printf("echo ssh-pageant pid %d;\n", pid);
             if (!opt_debug)
                 return 0;
         }
