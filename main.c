@@ -108,9 +108,13 @@ do_agent_loop(int sockfd)
         FD_FOREACH(fd, &do_read_set) {
             if (fd == sockfd) {
                 int s = accept(sockfd, NULL, 0);
-                if (s >= FD_SETSIZE)
+                if (s >= FD_SETSIZE) {
+                    warnx("accept: Too many connections");
                     close(s);
-                else if (s >= 0)
+                }
+                else if (s < 0)
+                    warn("accept");
+                else
                     FD_SET(s, &read_set);
             }
             else {
@@ -119,8 +123,14 @@ do_agent_loop(int sockfd)
                     sendbuf[fd] = agent_query(buf);
                     FD_SET(fd, &write_set);
                 }
-                else
+                else {
+                    if (len < 0)
+                        warn("recv(%d)", fd);
+                    else if (len > 0)
+                        warnx("recv(%d) = %d (expected %d)",
+                              fd, len, len >= 4 ? msglen(buf) : -1);
                     close(fd);
+                }
                 FD_CLR(fd, &read_set);
             }
         }
@@ -130,8 +140,14 @@ do_agent_loop(int sockfd)
             int len = send(fd, reply, msglen(reply), 0);
             if (len == msglen(reply))
                 FD_SET(fd, &read_set);
-            else
+            else {
+                if (len < 0)
+                    warn("send(%d)", fd);
+                else
+                    warnx("send(%d) = %d (expected %d)",
+                          fd, len, msglen(reply));
                 close(fd);
+            }
             FD_CLR(fd, &write_set);
             free(sendbuf[fd]);
             sendbuf[fd] = NULL;
