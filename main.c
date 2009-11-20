@@ -155,7 +155,7 @@ main(int argc, char *argv[])
     int opt_quiet = 0;
     int opt_kill = 0;
     int opt_lifetime = 0;
-    int opt_csh = getenv("SHELL") && strstr(getenv("SHELL"), "csh");
+    int opt_csh = !!strstr(getenv("SHELL") ?: "", "csh");
 
     while ((opt = getopt_long(argc, argv, "+hcskdqa:t:",
                               long_options, NULL)) != -1)
