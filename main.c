@@ -8,6 +8,7 @@
  * version 3 of the License, or (at your option) any later version.
  */
 
+#include <err.h>
 #include <getopt.h>
 #include <libgen.h>
 #include <process.h>
@@ -38,7 +39,7 @@ __attribute__((noreturn)) static void
 cleanup_exit(const char *prefix)
 {
     if (prefix)
-        perror(prefix);
+        warn(prefix);
     unlink(sockpath);
     rmdir(tempdir);
     exit(prefix != NULL);
@@ -194,10 +195,8 @@ main(int argc, char *argv[])
                 break;
 
             case 'a':
-                if (strlen(optarg) + 1 > sizeof(sockpath)) {
-                    fprintf(stderr, "%s: socket address is too long\n", prog);
-                    return 1;
-                }
+                if (strlen(optarg) + 1 > sizeof(sockpath))
+                    errx(1, "socket address is too long");
                 strcpy(sockpath, optarg);
                 break;
 
@@ -206,27 +205,23 @@ main(int argc, char *argv[])
                 break;
 
             case '?':
-                fprintf(stderr, "Try '%s --help' for more information\n", prog);
-                return 1;
+                errx(1, "try --help for more information");
+                break;
 
             default:
                 // shouldn't get here
-                fprintf(stderr, "getopt returned unknown code %#X\n", opt);
-                return 2;
+                errx(2, "getopt returned unknown code %#X", opt);
+                break;
         }
 
     if (opt_kill) {
         pid_t pid;
         const char *pidenv = getenv("SSH_PAGEANT_PID");
-        if (!pidenv) {
-            fprintf(stderr, "SSH_PAGEANT_PID not set, cannot kill agent\n");
-            return 1;
-        }
+        if (!pidenv)
+            errx(1, "SSH_PAGEANT_PID not set, cannot kill agent");
         pid = atoi(pidenv);
-        if (kill(pid, SIGTERM) < 0) {
-            perror("kill");
-            return 1;
-        }
+        if (kill(pid, SIGTERM) < 0)
+            err(1, "kill(%d)", pid);
         if (opt_csh) {
             printf("unsetenv SSH_AUTH_SOCK;\n");
             printf("unsetenv SSH_PAGEANT_PID;\n");
@@ -241,7 +236,7 @@ main(int argc, char *argv[])
     }
 
     if (opt_lifetime && !opt_quiet)
-        fprintf(stderr, "%s: option is not implemented -- t\n", prog);
+        warnx("option is not implemented -- t");
 
     signal(SIGINT, cleanup_signal);
     signal(SIGHUP, cleanup_signal);
