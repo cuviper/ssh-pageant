@@ -113,7 +113,7 @@ do_agent_loop(int sockfd)
                     FD_SET(s, &read_set);
             }
             else {
-                int len = read(fd, buf, sizeof(buf));
+                int len = recv(fd, buf, sizeof(buf), 0);
                 if (len >= 4 && len == msglen(buf)) {
                     sendbuf[fd] = agent_query(buf);
                     FD_SET(fd, &write_set);
@@ -126,7 +126,7 @@ do_agent_loop(int sockfd)
 
         FD_FOREACH(fd, &do_write_set) {
             void *reply = sendbuf[fd] ?: &reply_error;
-            int len = write(fd, reply, msglen(reply));
+            int len = send(fd, reply, msglen(reply), 0);
             if (len == msglen(reply))
                 FD_SET(fd, &read_set);
             else
