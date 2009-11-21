@@ -31,6 +31,12 @@
         if (FD_ISSET(fd, set))
 
 
+struct fd_buf {
+    int recv, send;
+    char buf[AGENT_MAX_MSGLEN];
+};
+
+
 static char tempdir[UNIX_PATH_LEN] = "";
 static char sockpath[UNIX_PATH_LEN] = "";
 
@@ -85,15 +91,62 @@ open_auth_socket()
 }
 
 
+static int
+agent_recv(int fd, struct fd_buf *p)
+{
+    int len = recv(fd, p->buf + p->recv, sizeof(p->buf) - p->recv, 0);
+    if (len <= 0) {
+        if (len < 0)
+            warn("recv(%d)", fd);
+        return -1;
+    }
+
+    p->recv += len;
+    if (p->recv < 4 || p->recv < msglen(p->buf))
+        return 0;
+
+    if (p->recv > msglen(p->buf)) {
+        warnx("recv(%d) = %d (expected %d)",
+              fd, p->recv, msglen(p->buf));
+        return -1;
+    }
+
+    agent_query(p->buf);
+    p->send = 0;
+    return 1;
+}
+
+
+static int
+agent_send(int fd, struct fd_buf *p)
+{
+    int len = send(fd, p->buf + p->send, msglen(p->buf) - p->send, 0);
+    if (len < 0) {
+        warn("send(%d)", fd);
+        return -1;
+    }
+
+    p->send += len;
+    if (p->send < msglen(p->buf))
+        return 0;
+
+    if (p->send > msglen(p->buf)) {
+        warnx("send(%d) = %d (expected %d)",
+              fd, p->send, msglen(p->buf));
+        return -1;
+    }
+
+    p->recv = 0;
+    return 1;
+}
+
+
 __attribute__((noreturn)) static void
 do_agent_loop(int sockfd)
 {
     int fd;
     fd_set read_set, write_set;
-    struct fd_buf {
-        int recv, send;
-        char buf[AGENT_MAX_MSGLEN];
-    } *bufs[FD_SETSIZE] = { NULL };
+    struct fd_buf *bufs[FD_SETSIZE] = { NULL };
 
     FD_ZERO(&read_set);
     FD_ZERO(&write_set);
@@ -125,59 +178,31 @@ do_agent_loop(int sockfd)
                 }
             }
             else {
-                struct fd_buf *p = bufs[fd];
-                int len = recv(fd, p->buf + p->recv,
-                               sizeof(p->buf) - p->recv, 0);
-                FD_CLR(fd, &read_set);
-                if (len <= 0) {
-                    if (len < 0)
-                        warn("recv(%d)", fd);
-                    close(fd);
-                    free(p);
-                }
-                else {
-                    p->recv += len;
-                    if (p->recv < 4 || p->recv < msglen(p->buf))
-                        FD_SET(fd, &read_set);
-                    else if (p->recv > msglen(p->buf)) {
-                        warnx("recv(%d) = %d (expected %d)",
-                              fd, p->recv, msglen(p->buf));
+                int res = agent_recv(fd, bufs[fd]);
+                if (res != 0) {
+                    FD_CLR(fd, &read_set);
+                    if (res < 0) {
                         close(fd);
-                        free(p);
+                        free(bufs[fd]);
+                        bufs[fd] = NULL;
                     }
-                    else {
-                        agent_query(p->buf);
-                        p->send = 0;
+                    else
                         FD_SET(fd, &write_set);
-                    }
                 }
             }
         }
 
         FD_FOREACH(fd, &do_write_set) {
-            struct fd_buf *p = bufs[fd];
-            int len = send(fd, p->buf + p->send,
-                           msglen(p->buf) - p->send, 0);
-            FD_CLR(fd, &write_set);
-            if (len < 0) {
-                warn("send(%d)", fd);
-                close(fd);
-                free(p);
-            }
-            else {
-                p->send += len;
-                if (p->send < msglen(p->buf))
-                    FD_SET(fd, &write_set);
-                else if (p->send > msglen(p->buf)) {
-                    warnx("send(%d) = %d (expected %d)",
-                          fd, p->send, msglen(p->buf));
+            int res = agent_send(fd, bufs[fd]);
+            if (res != 0) {
+                FD_CLR(fd, &write_set);
+                if (res < 0) {
                     close(fd);
-                    free(p);
+                    free(bufs[fd]);
+                    bufs[fd] = NULL;
                 }
-                else {
-                    p->recv = 0;
+                else
                     FD_SET(fd, &read_set);
-                }
             }
         }
     }
