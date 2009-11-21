@@ -158,37 +158,37 @@ do_agent_loop(int sockfd)
         if (select(FD_SETSIZE, &do_read_set, &do_write_set, NULL, NULL) < 0)
             cleanup_exit("select");
 
-        FD_FOREACH(fd, &do_read_set) {
-            if (fd == sockfd) {
-                int s = accept(sockfd, NULL, 0);
-                if (s >= FD_SETSIZE) {
-                    warnx("accept: Too many connections");
+        if (FD_ISSET(sockfd, &do_read_set)) {
+            int s = accept(sockfd, NULL, 0);
+            if (s >= FD_SETSIZE) {
+                warnx("accept: Too many connections");
+                close(s);
+            }
+            else if (s < 0)
+                warn("accept");
+            else {
+                bufs[s] = calloc(1, sizeof(struct fd_buf));
+                if (!bufs[s]) {
+                    warnx("calloc: No memory");
                     close(s);
                 }
-                else if (s < 0)
-                    warn("accept");
-                else {
-                    bufs[s] = calloc(1, sizeof(struct fd_buf));
-                    if (!bufs[s]) {
-                        warnx("calloc: No memory");
-                        close(s);
-                    }
-                    else
-                        FD_SET(s, &read_set);
-                }
+                else
+                    FD_SET(s, &read_set);
             }
-            else {
-                int res = agent_recv(fd, bufs[fd]);
-                if (res != 0) {
-                    FD_CLR(fd, &read_set);
-                    if (res < 0) {
-                        close(fd);
-                        free(bufs[fd]);
-                        bufs[fd] = NULL;
-                    }
-                    else
-                        FD_SET(fd, &write_set);
+            FD_CLR(sockfd, &do_read_set);
+        }
+
+        FD_FOREACH(fd, &do_read_set) {
+            int res = agent_recv(fd, bufs[fd]);
+            if (res != 0) {
+                FD_CLR(fd, &read_set);
+                if (res < 0) {
+                    close(fd);
+                    free(bufs[fd]);
+                    bufs[fd] = NULL;
                 }
+                else
+                    FD_SET(fd, &write_set);
             }
         }
 
