@@ -19,37 +19,47 @@
 
 #define AGENT_COPYDATA_ID 0x804e50ba   /* random goop */
 
-void *
-agent_query(void *in)
+#define SSH_AGENT_FAILURE 5
+
+void
+agent_query(void *buf)
 {
-    HWND hwnd;
-    char mapname[] = "PageantRequest12345678";
-    HANDLE filemap;
-    void *p, *ret = NULL;
-    int id;
-    COPYDATASTRUCT cds;
+    HWND hwnd = FindWindow("Pageant", "Pageant");
+    if (hwnd) {
+        char mapname[] = "PageantRequest12345678";
+        sprintf(mapname, "PageantRequest%08x", (unsigned)GetCurrentThreadId());
 
-    hwnd = FindWindow("Pageant", "Pageant");
-    if (!hwnd)
-        return NULL;
-    sprintf(mapname, "PageantRequest%08x", (unsigned)GetCurrentThreadId());
-    filemap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
-                                0, AGENT_MAX_MSGLEN, mapname);
-    if (filemap == NULL || filemap == INVALID_HANDLE_VALUE)
-        return NULL;
-    p = MapViewOfFile(filemap, FILE_MAP_WRITE, 0, 0, 0);
-    memcpy(p, in, msglen(in));
-    cds.dwData = AGENT_COPYDATA_ID;
-    cds.cbData = 1 + strlen(mapname);
-    cds.lpData = mapname;
+        HANDLE filemap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL,
+                                           PAGE_READWRITE, 0,
+                                           AGENT_MAX_MSGLEN, mapname);
 
-    id = SendMessage(hwnd, WM_COPYDATA, (WPARAM) NULL, (LPARAM) &cds);
-    if (id > 0) {
-        ret = malloc(msglen(p));
-        if (ret)
-            memcpy(ret, p, msglen(p));
+        if (filemap != NULL && filemap != INVALID_HANDLE_VALUE) {
+            void *p = MapViewOfFile(filemap, FILE_MAP_WRITE, 0, 0, 0);
+            memcpy(p, buf, msglen(buf));
+
+            COPYDATASTRUCT cds = {
+                .dwData = AGENT_COPYDATA_ID,
+                .cbData = 1 + strlen(mapname),
+                .lpData = mapname,
+            };
+
+            int id = SendMessage(hwnd, WM_COPYDATA,
+                                 (WPARAM) NULL, (LPARAM) &cds);
+
+            if (msglen(p) > AGENT_MAX_MSGLEN)
+                id = 0;
+
+            if (id > 0)
+                memcpy(buf, p, msglen(p));
+
+            UnmapViewOfFile(p);
+            CloseHandle(filemap);
+
+            if (id > 0)
+                return;
+        }
     }
-    UnmapViewOfFile(p);
-    CloseHandle(filemap);
-    return ret;
+
+    static const char reply_error[5] = { 0, 0, 0, 1, SSH_AGENT_FAILURE };
+    memcpy(buf, reply_error, msglen(reply_error));
 }

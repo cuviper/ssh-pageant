@@ -88,12 +88,12 @@ open_auth_socket()
 __attribute__((noreturn)) static void
 do_agent_loop(int sockfd)
 {
-    static char reply_error[5] = { 0, 0, 0, 1, SSH_AGENT_FAILURE };
-
     int fd;
     fd_set read_set, write_set;
-    char buf[AGENT_MAX_MSGLEN];
-    void *sendbuf[FD_SETSIZE] = { NULL };
+    struct fd_buf {
+        int recv, send;
+        char buf[AGENT_MAX_MSGLEN];
+    } *bufs[FD_SETSIZE] = { NULL };
 
     FD_ZERO(&read_set);
     FD_ZERO(&write_set);
@@ -114,43 +114,71 @@ do_agent_loop(int sockfd)
                 }
                 else if (s < 0)
                     warn("accept");
-                else
-                    FD_SET(s, &read_set);
+                else {
+                    bufs[s] = calloc(1, sizeof(struct fd_buf));
+                    if (!bufs[s]) {
+                        warnx("calloc: No memory");
+                        close(s);
+                    }
+                    else
+                        FD_SET(s, &read_set);
+                }
             }
             else {
-                int len = recv(fd, buf, sizeof(buf), 0);
-                if (len >= 4 && len == msglen(buf)) {
-                    sendbuf[fd] = agent_query(buf);
-                    FD_SET(fd, &write_set);
-                }
-                else {
+                struct fd_buf *p = bufs[fd];
+                int len = recv(fd, p->buf + p->recv,
+                               sizeof(p->buf) - p->recv, 0);
+                FD_CLR(fd, &read_set);
+                if (len <= 0) {
                     if (len < 0)
                         warn("recv(%d)", fd);
-                    else if (len > 0)
-                        warnx("recv(%d) = %d (expected %d)",
-                              fd, len, len >= 4 ? msglen(buf) : -1);
                     close(fd);
+                    free(p);
                 }
-                FD_CLR(fd, &read_set);
+                else {
+                    p->recv += len;
+                    if (p->recv < 4 || p->recv < msglen(p->buf))
+                        FD_SET(fd, &read_set);
+                    else if (p->recv > msglen(p->buf)) {
+                        warnx("recv(%d) = %d (expected %d)",
+                              fd, p->recv, msglen(p->buf));
+                        close(fd);
+                        free(p);
+                    }
+                    else {
+                        agent_query(p->buf);
+                        p->send = 0;
+                        FD_SET(fd, &write_set);
+                    }
+                }
             }
         }
 
         FD_FOREACH(fd, &do_write_set) {
-            void *reply = sendbuf[fd] ?: &reply_error;
-            int len = send(fd, reply, msglen(reply), 0);
-            if (len == msglen(reply))
-                FD_SET(fd, &read_set);
-            else {
-                if (len < 0)
-                    warn("send(%d)", fd);
-                else
-                    warnx("send(%d) = %d (expected %d)",
-                          fd, len, msglen(reply));
-                close(fd);
-            }
+            struct fd_buf *p = bufs[fd];
+            int len = send(fd, p->buf + p->send,
+                           msglen(p->buf) - p->send, 0);
             FD_CLR(fd, &write_set);
-            free(sendbuf[fd]);
-            sendbuf[fd] = NULL;
+            if (len < 0) {
+                warn("send(%d)", fd);
+                close(fd);
+                free(p);
+            }
+            else {
+                p->send += len;
+                if (p->send < msglen(p->buf))
+                    FD_SET(fd, &write_set);
+                else if (p->send > msglen(p->buf)) {
+                    warnx("send(%d) = %d (expected %d)",
+                          fd, p->send, msglen(p->buf));
+                    close(fd);
+                    free(p);
+                }
+                else {
+                    p->recv = 0;
+                    FD_SET(fd, &read_set);
+                }
+            }
         }
     }
 }

@@ -14,12 +14,11 @@
 #include <arpa/inet.h>
 
 #define AGENT_MAX_MSGLEN  8192
-#define SSH_AGENT_FAILURE 5
 
-extern void *agent_query(void *in);
+extern void agent_query(void *buf);
 
-static inline int msglen(void *p) {
-    return 4 + ntohl(*(uint32_t *)p);
+static inline int msglen(const void *p) {
+    return 4 + ntohl(*(const uint32_t *)p);
 }
 
 #endif /* __WINPGNTC_H__ */
