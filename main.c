@@ -1,6 +1,6 @@
 /*
  * ssh-pageant main code.
- * Copyright (C) 2009  Josh Stone
+ * Copyright (C) 2009, 2010  Josh Stone
  *
  * This file is part of ssh-pageant, and is free software: you can
  * redistribute it and/or modify it under the terms of the GNU General
@@ -214,6 +214,7 @@ main(int argc, char *argv[])
 {
     static struct option long_options[] = {
         { "help", no_argument, 0, 'h' },
+        { "version", no_argument, 0, 'v' },
         { 0, 0, 0, 0 }
     };
 
@@ -227,20 +228,31 @@ main(int argc, char *argv[])
     int opt_lifetime = 0;
     int opt_csh = !!strstr(getenv("SHELL") ?: "", "csh");
 
-    while ((opt = getopt_long(argc, argv, "+hcskdqa:t:",
+    while ((opt = getopt_long(argc, argv, "+hvcskdqa:t:",
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
                 printf("Usage: %s [options] [command [arg ...]]\n", prog);
                 printf("Options:\n");
-                printf("  -h, --help  Display this information\n");
-                printf("  -c          Use C-style shell commands\n");
-                printf("  -s          Use Bourne-style shell commands\n");
-                printf("  -k          Kill the current %s\n", prog);
-                printf("  -d          Enable debug mode\n");
-                printf("  -q          Enable quiet mode\n");
-                printf("  -a SOCKET   Bind to a specific socket address\n");
-                printf("  -t TIME     Limit key lifetime (not implemented)\n");
+                printf("  -h, --help     Display this help information\n");
+                printf("  -v, --version  Display version information\n");
+                printf("  -c             Use C-style shell commands\n");
+                printf("  -s             Use Bourne-style shell commands\n");
+                printf("  -k             Kill the current %s\n", prog);
+                printf("  -d             Enable debug mode\n");
+                printf("  -q             Enable quiet mode\n");
+                printf("  -a SOCKET      Bind to a specific socket address\n");
+                printf("  -t TIME        Limit key lifetime (not implemented)\n");
+                return 0;
+
+            case 'v':
+                printf("ssh-pageant 1.0\n");
+                printf("Copyright (C) 2009, 2010  Josh Stone\n");
+                printf("License GPLv3+: GNU GPL version 3 or later"
+                       " <http://gnu.org/licenses/gpl.html>.\n");
+                printf("This is free software:"
+                       " you are free to change and redistribute it.\n");
+                printf("There is NO WARRANTY, to the extent permitted by law.\n");
                 return 0;
 
             case 'c':
