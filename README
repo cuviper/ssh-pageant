@@ -4,7 +4,13 @@ storage to Pageant.  You can use ssh-pageant to automate SSH connections from
 the Cygwin shell, and I find this is most helpful for those services built on
 top of SSH, like SFTP file transfers or pushing to secure git repositories.
 
-Usage is very much like ssh-agent.  I just add the following lines for bash:
+Like ssh-agent, ssh-pageant starts by setting up the auth socket, and then it
+prints the environment variables that will let openssh connections use that
+socket.  The usual approach is to use your shell's "eval" command to load
+those environment variables automatically.  By default, ssh-pageant outputs
+sh-style commands, but the -c option will change that to csh-style commands.
+
+For example, I just add the following lines to my bash configuration:
 
 ~/.bash_profile:
   if [ -z "$SSH_AUTH_SOCK" -a -x /usr/bin/ssh-pageant ]; then
