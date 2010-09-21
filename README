@@ -1,5 +1,8 @@
 ssh-pageant 1.0
 ------------------------------------------------------------------------------
+Home:   http://cuviper.github.com/ssh-pageant/
+Issues: http://github.com/cuviper/ssh-pageant/issues
+------------------------------------------------------------------------------
 
 ssh-pageant is an SSH authentication agent for Cygwin that links OpenSSH to
 PuTTY's Pageant.  It acts very much like ssh-agent, except it leaves the key
