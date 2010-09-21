@@ -5,7 +5,7 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
-  <title>cuviper/ssh-pageant @ GitHub</title>
+  <title>ssh-pageant</title>
 
   <style type="text/css">
     body {
@@ -16,7 +16,7 @@
     }
     #container {
       margin: 0 auto;
-      width: 700px;
+      width: 600px;
     }
     h1 { font-size: 3.8em; color: #712513; margin-bottom: 3px; }
     h1 .small { font-size: 0.4em; }
@@ -26,7 +26,7 @@
     a { color: #712513; }
     .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
     .download { float: right; }
-    pre { background: #000; color: #fff; padding: 15px;}
+    /* pre { /* background: #000; color: #fff; padding: 15px;} */
     hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
     .footer { text-align:center; padding-top:30px; font-style: italic; }
   </style>
@@ -34,44 +34,50 @@
 </head>
 
 <body>
-  <a href="http://github.com/cuviper/ssh-pageant"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
 
   <div id="container">
 
-    <div class="download">
-      <a href="http://github.com/cuviper/ssh-pageant/zipball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
-      <a href="http://github.com/cuviper/ssh-pageant/tarball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
-    </div>
-
-    <h1><a href="http://github.com/cuviper/ssh-pageant">ssh-pageant</a>
-      <span class="small">by <a href="http://github.com/cuviper">cuviper</a></span></h1>
+    <h1><a href="http://github.com/cuviper/ssh-pageant">ssh-pageant</a></h1>
 
     <div class="description">
       An ssh authentication agent for Cygwin that links to PuTTY's Pageant.
     </div>
 
-    <h2>Authors</h2>
-<p>Josh Stone (cuviper@gmail.com)<br/><br/>      </p>
-<h2>Contact</h2>
-<p>Josh Stone (cuviper@gmail.com)<br/>      </p>
-
+    <h2>About</h2>
+    <p>
+      <strong>ssh-pageant</strong> is an SSH authentication agent for
+      <a href="http://www.cygwin.com">Cygwin</a>
+      that links OpenSSH to
+      <a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/">PuTTY</a>'s
+      Pageant.  It acts very much like ssh-agent, except it leaves the key
+      storage to Pageant.  You can use ssh-pageant to automate SSH connections
+      from the Cygwin shell, and I find this is most helpful for those services
+      built on top of SSH, like SFTP file transfers or pushing to secure git
+      repositories.
+    </p>
+    <p>
+      See the
+      <a href="http://github.com/cuviper/ssh-pageant/raw/master/README">README</a>
+      for more details.
+    </p>
 
     <h2>Download</h2>
     <p>
-      You can download this project in either
-      <a href="http://github.com/cuviper/ssh-pageant/zipball/master">zip</a> or
-      <a href="http://github.com/cuviper/ssh-pageant/tarball/master">tar</a> formats.
+      The latest release is
+      <a href="http://github.com/downloads/cuviper/ssh-pageant/ssh-pageant-1.0-release.tar.gz">ssh-pageant 1.0</a>
+      (<a href="http://github.com/cuviper/ssh-pageant/tarball/v1.0">source</a>).
+      Please report bugs or suggest enhancements via the
+      <a href="http://github.com/cuviper/ssh-pageant/issues">issue tracker</a>.
     </p>
-    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
-      by running:
-      <pre>$ git clone git://github.com/cuviper/ssh-pageant</pre>
+    <p>
+      The project is hosted on GitHub at
+      <a href="http://github.com/cuviper/ssh-pageant">cuviper/ssh-pageant</a>.
+      You can clone the latest sources with <a href="http://git-scm.com">Git</a>
+      by running: <pre>  $ git clone git://github.com/cuviper/ssh-pageant</pre>
     </p>
 
-    <div class="footer">
-      get the source code on GitHub : <a href="http://github.com/cuviper/ssh-pageant">cuviper/ssh-pageant</a>
-    </div>
+    <h2>Author</h2>
+    <p>Josh Stone (cuviper AT gmail.com)</p>
 
   </div>
 
