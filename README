@@ -32,6 +32,8 @@ add your ssh keys once.  You could also rename ssh-pageant to ssh-agent and
 then use something like keychain to manage a single instance, but I don't find
 that necessary.
 
+Note that Pageant itself is not started by ssh-pageant.  It is recommended to
+add Pageant to the Windows startup configuration so it is always available.
 
 History: Once upon a time I privately developed a Cygwin terminal based on
 PuTTY, which I wanted because I could use Cygwin-native ptys with PuTTY's
