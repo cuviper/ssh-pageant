@@ -38,6 +38,13 @@ that necessary.
 Note that Pageant itself is not started by ssh-pageant.  It is recommended to
 add Pageant to the Windows startup configuration so it is always available.
 
+There is a known issue that in certain environments, ssh-pageant will not be
+able to talk to Pageant, reporting always SSH_AGENT_FAILURE.  Pageant asserts
+that the client's SID must match its own, but sometimes Cygwin apps end up
+running with different credentials than desktop apps.  The best known
+workaround is to start Pageant using cygstart.  See also:
+http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/cygwin-clobbers-pageant.html
+
 History: Once upon a time I privately developed a Cygwin terminal based on
 PuTTY, which I wanted because I could use Cygwin-native ptys with PuTTY's
 interface.  As part of that I also added an SSH_AUTH_SOCK shim which talked to
