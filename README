@@ -46,6 +46,16 @@ The author wasn't interested in including the SSH_AUTH_SOCK functionality
 though, so instead I split that out into this program, ssh-pageant, and I
 finally published the code in April 2009.
 
+Links:
+* PuTTY: An SSH client, including the Pageant authentication agent.
+  http://www.chiark.greenend.org.uk/~sgtatham/putty/
+* Cygwin: A Linux-like environment for Windows.
+  http://www.cygwin.com/
+* OpenSSH: The SSH client shipped by Cygwin.
+  http://www.openssh.com/
+* Charade: The friendly competition to ssh-pageant.
+  http://github.com/wesleyd/charade
+
 ------------------------------------------------------------------------------
 Copyright (C) 2009, 2010  Josh Stone
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
