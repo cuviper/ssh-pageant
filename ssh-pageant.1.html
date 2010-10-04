@@ -1,0 +1,119 @@
+<HTML><HEAD><TITLE>Manpage of ssh-pageant</TITLE>
+<link href="ssh-pageant.css" rel="stylesheet" type="text/css"/>
+</HEAD><BODY>
+<div id="container">
+<H1>ssh-pageant</H1>
+<P>
+<H2>NAME</H2>
+
+ssh-pageant - authentication agent
+<H2>SYNOPSIS</H2>
+
+<B>ssh-pageant</B> [<B>-c</B> | <B>-s</B>] [<B>-a</B> <I>socket</I>]
+[<I>command</I> [<I>arg ...</I>]]
+<BR>
+
+<B>ssh-pageant</B> [<B>-c</B> | <B>-s</B>] <B>-k</B> 
+<H2>DESCRIPTION</H2>
+
+<B>ssh-pageant</B> is an SSH authentication agent for Cygwin that links OpenSSH
+to PuTTY's Pageant.  It acts very much like ssh-agent, except it leaves the key
+storage to a separately-invoked Pageant instance.
+<H2>INVOCATION</H2>
+
+A UNIX-domain socket is first created which proxies authentication requests to
+Pageant.  If a <I>command</I> is supplied, this is executed with any additional
+arguments given and with environment variables set to use the new socket.
+Otherwise, ssh-pageant runs in the background and prints shell commands
+intended to set the same environment variables for the calling shell.
+<P>
+
+If invoked with <B>-k</B>, ssh-pageant will instead kill its previous instance
+and print shell commands to unset the environment variables.
+<H2>OPTIONS</H2>
+
+The standard GNU option formats are accepted, with single dashes introducing
+short options and double dashes introducing long options, e.g.
+<B>-o</B>&nbsp;<I>arg</I>, <B>--option</B>&nbsp;<I>arg</I>, and
+<B>--option=</B><I>arg</I>.  Options marked with <B>(*)</B> are meant to be
+equivalent to the same option in ssh-agent.
+<DL COMPACT>
+<DT><B>-h</B>, <B>--help</B><DD>
+Display a summary of options and exit.
+<DT><B>-v</B>, <B>--version</B><DD>
+Display version and copyright information and exit.
+<DT><B>-c</B><DD>
+Use C-style shell commands. <B>(*)</B>
+<DT><B>-s</B><DD>
+Use Bourne-style shell commands. <B>(*)</B>
+<DT><B>-k</B><DD>
+Kill the current ssh-pageant process. <B>(*)</B>
+<DT><B>-d</B><DD>
+Enable debug mode. <B>(*)</B>
+<DT><B>-q</B><DD>
+Enable quiet mode.
+<DT><B>-a</B> <I>socket</I><DD>
+Bind to a specific <I>socket</I> address. <B>(*)</B>
+<DT><B>-t</B> <I>time</I><DD>
+Limit key lifetime (not supported by Pageant). <B>(*)</B>
+</DL>
+<H2>USAGE</H2>
+
+The commands that ssh-pageant outputs are best used with the shell's &quot;eval&quot;
+command.  For example, this configuration will automatically configure the
+agent for each bash session:
+<DL COMPACT>
+<DT><B>~/.bash_profile</B>:<DD>
+<PRE>
+if [ -z &quot;$SSH_AUTH_SOCK&quot; -a -x /usr/bin/ssh-pageant ]; then
+  eval $(/usr/bin/ssh-pageant -q)
+fi
+trap logout HUP
+</PRE>
+
+<DT><B>~/.bash_logout</B>:<DD>
+<PRE>
+if [ -x /usr/bin/ssh-pageant -a ! -z &quot;$SSH_PAGEANT_PID&quot; ]; then
+  eval $(/usr/bin/ssh-pageant -qk 2&gt;/dev/null)
+fi
+</PRE>
+
+</DL>
+<H2>ENVIRONMENT VARIABLES</H2>
+
+<DL COMPACT>
+<DT><B>SHELL</B><DD>
+Determines the default style of shell commands.  If it contains &quot;csh&quot;, then
+<B>-c</B> will be used, otherwise <B>-s</B> is assumed.
+<DT><B>SSH_AUTH_SOCK</B><DD>
+Holds the path to the agent's UNIX-domain socket.
+<DT><B>SSH_PAGEANT_PID</B><DD>
+Holds the agent's process ID, used by <B>-k</B> to kill it.
+</DL>
+<H2>ISSUES</H2>
+
+Please report bugs or suggest enhancements via the issue tracker at
+&lt;<I><A HREF="http://github.com/cuviper/ssh-pageant/issues">http://github.com/cuviper/ssh-pageant/issues</A></I>&gt;.
+<H2>COPYRIGHT</H2>
+
+Copyright (C) 2009, 2010  Josh Stone
+<BR>
+
+License GPLv3+: GNU GPL version 3 or later
+&lt;<I><A HREF="http://gnu.org/licenses/gpl.html">http://gnu.org/licenses/gpl.html</A></I>&gt;.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+<H2>SEE ALSO</H2>
+
+<B><A HREF="http://www.openbsd.org/cgi-bin/man.cgi?query=ssh-agent&sektion=1">ssh-agent</A></B>(1)
+
+<P>
+
+<HR>
+This document was created by
+<A HREF="http://www.nongnu.org/man2html/">man2html</A>,
+using the manual pages.<BR>
+Time: 16:31:40 GMT, October 04, 2010
+</div>
+</BODY>
+</HTML>
