@@ -1,6 +1,6 @@
 /*
  * Pageant client code.
- * Copyright (C) 2009  Josh Stone
+ * Copyright (C) 2009, 2011  Josh Stone
  *
  * This file is part of ssh-pageant, and is free software: you can
  * redistribute it and/or modify it under the terms of the GNU General
@@ -21,6 +21,40 @@
 
 #define SSH_AGENT_FAILURE 5
 
+static PSID
+get_user_sid(void)
+{
+    HANDLE proc = NULL, tok = NULL;
+    TOKEN_USER *user = NULL;
+    DWORD toklen, sidlen;
+    PSID sid = NULL, ret = NULL;
+
+    if ((proc = OpenProcess(MAXIMUM_ALLOWED, FALSE, GetCurrentProcessId()))
+            && OpenProcessToken(proc, TOKEN_QUERY, &tok)
+            && (GetTokenInformation(tok, TokenUser, NULL, 0, &toklen)
+                && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+            && (user = (TOKEN_USER *)LocalAlloc(LPTR, toklen))
+            && GetTokenInformation(tok, TokenUser, user, toklen, &toklen)) {
+        sidlen = GetLengthSid(user->User.Sid);
+        sid = (PSID)malloc(sidlen);
+        if (sid && CopySid(sidlen, sid, user->User.Sid)) {
+            /* Success. Move sid into the return value slot, and null it out
+             * to stop the cleanup code freeing it. */
+            ret = sid;
+            sid = NULL;
+        }
+    }
+
+    if (proc != NULL)
+        CloseHandle(proc);
+    if (tok != NULL)
+        CloseHandle(tok);
+    LocalFree(user);
+    free(sid);
+
+    return ret;
+}
+
 void
 agent_query(void *buf)
 {
@@ -29,7 +63,25 @@ agent_query(void *buf)
         char mapname[] = "PageantRequest12345678";
         sprintf(mapname, "PageantRequest%08x", (unsigned)GetCurrentThreadId());
 
-        HANDLE filemap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL,
+        PSECURITY_DESCRIPTOR psd = NULL;
+        SECURITY_ATTRIBUTES sa, *psa = NULL;
+        PSID usersid = get_user_sid();
+        if (usersid) {
+            psd = (PSECURITY_DESCRIPTOR)
+                LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH);
+            if (psd) {
+                if (InitializeSecurityDescriptor
+                        (psd, SECURITY_DESCRIPTOR_REVISION)
+                        && SetSecurityDescriptorOwner(psd, usersid, FALSE)) {
+                    sa.nLength = sizeof(sa);
+                    sa.bInheritHandle = TRUE;
+                    sa.lpSecurityDescriptor = psd;
+                    psa = &sa;
+                }
+            }
+        }
+
+        HANDLE filemap = CreateFileMapping(INVALID_HANDLE_VALUE, psa,
                                            PAGE_READWRITE, 0,
                                            AGENT_MAX_MSGLEN, mapname);
 
@@ -54,10 +106,15 @@ agent_query(void *buf)
 
             UnmapViewOfFile(p);
             CloseHandle(filemap);
+            LocalFree(psd);
+            free(usersid);
 
             if (id > 0)
                 return;
         }
+
+        LocalFree(psd);
+        free(usersid);
     }
 
     static const char reply_error[5] = { 0, 0, 0, 1, SSH_AGENT_FAILURE };
