@@ -31,7 +31,7 @@ get_user_sid(void)
 
     if ((proc = OpenProcess(MAXIMUM_ALLOWED, FALSE, GetCurrentProcessId()))
             && OpenProcessToken(proc, TOKEN_QUERY, &tok)
-            && (GetTokenInformation(tok, TokenUser, NULL, 0, &toklen)
+            && (!GetTokenInformation(tok, TokenUser, NULL, 0, &toklen)
                 && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
             && (user = (TOKEN_USER *)LocalAlloc(LPTR, toklen))
             && GetTokenInformation(tok, TokenUser, user, toklen, &toklen)) {
