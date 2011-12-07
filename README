@@ -1,4 +1,4 @@
-ssh-pageant 1.0
+ssh-pageant 1.1
 ------------------------------------------------------------------------------
 Home:   http://cuviper.github.com/ssh-pageant/
 Issues: http://github.com/cuviper/ssh-pageant/issues
@@ -38,12 +38,10 @@ that necessary.
 Note that Pageant itself is not started by ssh-pageant.  It is recommended to
 add Pageant to the Windows startup configuration so it is always available.
 
-There is a known issue that in certain environments, ssh-pageant will not be
-able to talk to Pageant, reporting always SSH_AGENT_FAILURE.  Pageant asserts
-that the client's SID must match its own, but sometimes Cygwin apps end up
-running with different credentials than desktop apps.  The best known
-workaround is to start Pageant using cygstart.  See also:
-http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/cygwin-clobbers-pageant.html
+If Pageant is running, but the agent still reports SSH_AGENT_FAILURE, this
+might be an old SID bug.  This is believed to be generally fixed in release
+1.1, but it also requires updating Pageant to version 0.62 or later.  The other
+known workaround is to launch Pageant using cygstart.
 
 History: Once upon a time I privately developed a Cygwin terminal based on
 PuTTY, which I wanted because I could use Cygwin-native ptys with PuTTY's
@@ -52,6 +50,10 @@ Pageant.  Then I discovered MinTTY, which does the terminal part much better.
 The author wasn't interested in including the SSH_AUTH_SOCK functionality
 though, so instead I split that out into this program, ssh-pageant, and I
 finally published the code in April 2009.
+
+Version History:
+* Tue Dec 06 2011 - 1.1 - fixed SID issues
+* Mon Sep 20 2010 - 1.0 - initial release
 
 Links:
 * PuTTY: An SSH client, including the Pageant authentication agent.
@@ -64,7 +66,7 @@ Links:
   http://github.com/wesleyd/charade
 
 ------------------------------------------------------------------------------
-Copyright (C) 2009, 2010  Josh Stone
+Copyright (C) 2009, 2010, 2011  Josh Stone
 License GPLv3+: GNU GPL version 3 or later, http://gnu.org/licenses/gpl.html
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
