@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "winpgntc.h"
@@ -41,21 +42,45 @@ static char tempdir[UNIX_PATH_LEN] = "";
 static char sockpath[UNIX_PATH_LEN] = "";
 
 
-__attribute__((noreturn)) static void
-cleanup_exit(const char *prefix)
+static void cleanup_exit(int status) __attribute__((noreturn));
+static void cleanup_warn(const char *prefix) __attribute__((noreturn, nonnull));
+static void cleanup_signal(int sig) __attribute__((noreturn));
+
+static void do_agent_loop(int sockfd) __attribute__((noreturn));
+
+
+
+static void
+cleanup_exit(int status)
 {
-    if (prefix)
-        warn(prefix);
     unlink(sockpath);
     rmdir(tempdir);
-    exit(prefix != NULL);
+    exit(status);
 }
 
 
 static void
-cleanup_signal(int sig __attribute__((unused)))
+cleanup_warn(const char *prefix)
 {
-    cleanup_exit(NULL);
+    warn("%s", prefix);
+    cleanup_exit(1);
+}
+
+
+static void
+cleanup_signal(int sig)
+{
+    // Most caught signals are basically just treated as exit notifiers,
+    // but when a child exits, copy its exit status so ssh-pageant is more
+    // effective as a command wrapper.
+    int status = 0;
+    if (sig == SIGCHLD && wait(&status) > 0) {
+        if (WIFEXITED(status))
+            status = WEXITSTATUS(status);
+        else if (WIFSIGNALED(status))
+            status = 128 + WTERMSIG(status);
+    }
+    cleanup_exit(status);
 }
 
 
@@ -68,12 +93,12 @@ open_auth_socket()
 
     fd = socket(PF_LOCAL, SOCK_STREAM, 0);
     if (fd < 0)
-        cleanup_exit("socket");
+        cleanup_warn("socket");
 
     if (!sockpath[0]) {
         strlcpy(tempdir, "/tmp/ssh-XXXXXX", sizeof(tempdir));
         if (!mkdtemp(tempdir))
-            cleanup_exit("mkdtemp");
+            cleanup_warn("mkdtemp");
         snprintf(sockpath, sizeof(sockpath), "%s/agent.%d", tempdir, getpid());
     }
 
@@ -81,11 +106,11 @@ open_auth_socket()
     strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
     um = umask(S_IXUSR | S_IRWXG | S_IRWXO);
     if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-        cleanup_exit("bind");
+        cleanup_warn("bind");
     umask(um);
 
     if (listen(fd, 128) < 0)
-        cleanup_exit("listen");
+        cleanup_warn("listen");
 
     return fd;
 }
@@ -141,7 +166,7 @@ agent_send(int fd, struct fd_buf *p)
 }
 
 
-__attribute__((noreturn)) static void
+static void
 do_agent_loop(int sockfd)
 {
     int fd;
@@ -156,7 +181,7 @@ do_agent_loop(int sockfd)
         fd_set do_read_set = read_set;
         fd_set do_write_set = write_set;
         if (select(FD_SETSIZE, &do_read_set, &do_write_set, NULL, NULL) < 0)
-            cleanup_exit("select");
+            cleanup_warn("select");
 
         if (FD_ISSET(sockfd, &do_read_set)) {
             int s = accept(sockfd, NULL, 0);
@@ -333,12 +358,12 @@ main(int argc, char *argv[])
         setenv("SSH_PAGEANT_PID", pidstr, 1);
         signal(SIGCHLD, cleanup_signal);
         if (spawnvp(_P_NOWAIT, subargv[0], subargv) < 0)
-            cleanup_exit(argv[optind]);
+            cleanup_warn(argv[optind]);
     }
     else {
         pid_t pid = opt_debug ? getpid() : fork();
         if (pid < 0)
-            cleanup_exit("fork");
+            cleanup_warn("fork");
         if (pid > 0) {
             if (opt_csh) {
                 printf("setenv SSH_AUTH_SOCK %s;\n", sockpath);
@@ -354,7 +379,7 @@ main(int argc, char *argv[])
                 return 0;
         }
         else if (setsid() < 0)
-            cleanup_exit("setsid");
+            cleanup_warn("setsid");
         else
             fclose(stderr);
     }
