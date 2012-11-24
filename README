@@ -1,4 +1,4 @@
-ssh-pageant 1.1
+ssh-pageant 1.2
 ------------------------------------------------------------------------------
 Home:   http://cuviper.github.com/ssh-pageant/
 Issues: http://github.com/cuviper/ssh-pageant/issues
@@ -52,6 +52,7 @@ though, so instead I split that out into this program, ssh-pageant, and I
 finally published the code in April 2009.
 
 Version History:
+* Sat Nov 24 2012 - 1.2 - mirror the exit status of child processes
 * Tue Dec 06 2011 - 1.1 - fixed SID issues
 * Mon Sep 20 2010 - 1.0 - initial release
 
@@ -66,7 +67,7 @@ Links:
   http://github.com/wesleyd/charade
 
 ------------------------------------------------------------------------------
-Copyright (C) 2009, 2010, 2011  Josh Stone
+Copyright (C) 2009, 2010, 2011, 2012  Josh Stone
 License GPLv3+: GNU GPL version 3 or later, http://gnu.org/licenses/gpl.html
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
