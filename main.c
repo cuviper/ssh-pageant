@@ -1,6 +1,6 @@
 /*
  * ssh-pageant main code.
- * Copyright (C) 2009, 2010, 2011  Josh Stone
+ * Copyright (C) 2009, 2010, 2011, 2012  Josh Stone
  *
  * This file is part of ssh-pageant, and is free software: you can
  * redistribute it and/or modify it under the terms of the GNU General
@@ -271,8 +271,8 @@ main(int argc, char *argv[])
                 return 0;
 
             case 'v':
-                printf("ssh-pageant 1.1\n");
-                printf("Copyright (C) 2009, 2010, 2011  Josh Stone\n");
+                printf("ssh-pageant 1.2\n");
+                printf("Copyright (C) 2009, 2010, 2011, 2012  Josh Stone\n");
                 printf("License GPLv3+: GNU GPL version 3 or later"
                        " <http://gnu.org/licenses/gpl.html>.\n");
                 printf("This is free software:"
