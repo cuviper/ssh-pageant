@@ -9,6 +9,7 @@
  */
 
 #include <err.h>
+#include <errno.h>
 #include <getopt.h>
 #include <libgen.h>
 #include <process.h>
@@ -125,6 +126,48 @@ open_auth_socket(const char* sockpath)
         cleanup_warn("listen");
 
     return fd;
+}
+
+
+// Try to reuse an existing socket path.  For now, just being able to connect
+// will be deemed good enough.  If it can't connect, but is still a socket, try
+// to remove it.  Return 0 if the path was simply not connectible, else exit.
+static int
+reuse_socket_path(const char* sockpath)
+{
+    struct sockaddr_un addr;
+    int fd;
+
+    fd = socket(PF_LOCAL, SOCK_STREAM | SOCK_CLOEXEC, 0);
+    if (fd < 0)
+        cleanup_warn("socket");
+
+    addr.sun_family = AF_UNIX;
+    strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
+    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == 0) {
+        // The sockpath is already accepting connections -- reuse!
+        close(fd);
+        return 1;
+    }
+    else if (errno == ENOENT)
+        return 0;
+    else if (errno == ECONNREFUSED) {
+        // Either it's not listening, or not a socket at all.  If it was at
+        // least a socket, remove it so it can be replaced.
+        struct stat st;
+        if (stat(sockpath, &st) < 0)
+            cleanup_warn("stat");
+
+        if (S_ISSOCK(st.st_mode)) {
+            if (unlink(sockpath) < 0)
+                cleanup_warn("unlink");
+            return 0;
+        }
+
+        // Restore the errno before warning out.
+        errno = ECONNREFUSED;
+    }
+    cleanup_warn("connect");
 }
 
 
@@ -253,20 +296,22 @@ main(int argc, char *argv[])
     static struct option long_options[] = {
         { "help", no_argument, 0, 'h' },
         { "version", no_argument, 0, 'v' },
+        { "reuse", no_argument, 0, 'r' },
         { 0, 0, 0, 0 }
     };
 
-    int sockfd;
+    int sockfd = -1;
     const char *prog = basename(argv[0]);
 
     int opt;
     int opt_debug = 0;
     int opt_quiet = 0;
     int opt_kill = 0;
+    int opt_reuse = 0;
     int opt_lifetime = 0;
     int opt_csh = !!strstr(getenv("SHELL") ?: "", "csh");
 
-    while ((opt = getopt_long(argc, argv, "+hvcskdqa:t:",
+    while ((opt = getopt_long(argc, argv, "+hvcskdqa:rt:",
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
@@ -280,6 +325,7 @@ main(int argc, char *argv[])
                 printf("  -d             Enable debug mode\n");
                 printf("  -q             Enable quiet mode\n");
                 printf("  -a SOCKET      Bind to a specific socket address\n");
+                printf("  -r, --reuse    Allow reusing an existing -a SOCKET\n");
                 printf("  -t TIME        Limit key lifetime (not supported by Pageant)\n");
                 return 0;
 
@@ -319,6 +365,10 @@ main(int argc, char *argv[])
                 strcpy(sockpath, optarg);
                 break;
 
+            case 'r':
+                opt_reuse = 1;
+                break;
+
             case 't':
                 opt_lifetime = 1;
                 break;
@@ -354,6 +404,9 @@ main(int argc, char *argv[])
         return 0;
     }
 
+    if (opt_reuse && !sockpath[0])
+        errx(1, "socket reuse requires specifying -a SOCKET");
+
     if (opt_lifetime && !opt_quiet)
         warnx("option is not supported by Pageant -- t");
 
@@ -361,36 +414,49 @@ main(int argc, char *argv[])
     signal(SIGHUP, cleanup_signal);
     signal(SIGTERM, cleanup_signal);
 
-    if (!sockpath[0])
-        create_socket_path(sockpath, sizeof(sockpath));
-    sockfd = open_auth_socket(sockpath);
+    int p_sock_reused = opt_reuse && reuse_socket_path(sockpath);
+    if (!p_sock_reused) {
+        if (!sockpath[0])
+            create_socket_path(sockpath, sizeof(sockpath));
+        sockfd = open_auth_socket(sockpath);
+    }
+
+    // If the sockpath is actually reused, don't daemonize, don't set
+    // SSH_PAGEANT_PID, and don't go into do_agent_loop(). Just set
+    // SSH_AUTH_SOCK and exit normally.
+    int p_daemonize = !(opt_debug || p_sock_reused);
+    int p_set_pid_env = !p_sock_reused;
 
     if (optind < argc) {
         const char **subargv = (const char **)argv + optind;
-        char pidstr[16];
-        snprintf(pidstr, sizeof(pidstr), "%d", getpid());
         setenv("SSH_AUTH_SOCK", sockpath, 1);
-        setenv("SSH_PAGEANT_PID", pidstr, 1);
+        if (p_set_pid_env) {
+            char pidstr[16];
+            snprintf(pidstr, sizeof(pidstr), "%d", getpid());
+            setenv("SSH_PAGEANT_PID", pidstr, 1);
+        }
         signal(SIGCHLD, cleanup_signal);
         if (spawnvp(_P_NOWAIT, subargv[0], subargv) < 0)
             cleanup_warn(argv[optind]);
     }
     else {
-        pid_t pid = opt_debug ? getpid() : fork();
+        pid_t pid = p_daemonize ? fork() : getpid();
         if (pid < 0)
             cleanup_warn("fork");
         if (pid > 0) {
             if (opt_csh) {
                 printf("setenv SSH_AUTH_SOCK %s;\n", sockpath);
-                printf("setenv SSH_PAGEANT_PID %d;\n", pid);
+                if (p_set_pid_env)
+                    printf("setenv SSH_PAGEANT_PID %d;\n", pid);
             }
             else {
                 printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
-                printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
+                if (p_set_pid_env)
+                    printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
             }
-            if (!opt_quiet)
+            if (p_set_pid_env && !opt_quiet)
                 printf("echo ssh-pageant pid %d;\n", pid);
-            if (!opt_debug)
+            if (p_daemonize)
                 return 0;
         }
         else if (setsid() < 0)
@@ -401,5 +467,8 @@ main(int argc, char *argv[])
     fclose(stdin);
     fclose(stdout);
 
-    do_agent_loop(sockfd);
+    if (!p_sock_reused)
+        do_agent_loop(sockfd);
+
+    return 0;
 }
