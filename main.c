@@ -38,8 +38,8 @@ struct fd_buf {
 };
 
 
-static char tempdir[UNIX_PATH_LEN] = "";
-static char sockpath[UNIX_PATH_LEN] = "";
+static char cleanup_tempdir[UNIX_PATH_LEN] = "";
+static char cleanup_sockpath[UNIX_PATH_LEN] = "";
 
 
 static void cleanup_exit(int status) __attribute__((noreturn));
@@ -53,8 +53,8 @@ static void do_agent_loop(int sockfd) __attribute__((noreturn));
 static void
 cleanup_exit(int status)
 {
-    unlink(sockpath);
-    rmdir(tempdir);
+    unlink(cleanup_sockpath);
+    rmdir(cleanup_tempdir);
     exit(status);
 }
 
@@ -84,8 +84,24 @@ cleanup_signal(int sig)
 }
 
 
+// Create a temporary path for the socket.
+static void
+create_socket_path(char* sockpath, size_t len)
+{
+    char tempdir[] = "/tmp/ssh-XXXXXX";
+    if (!mkdtemp(tempdir))
+        cleanup_warn("mkdtemp");
+
+    // NB: Don't set cleanup_tempdir until after it's created
+    strlcpy(cleanup_tempdir, tempdir, sizeof(cleanup_tempdir));
+
+    snprintf(sockpath, len, "%s/agent.%d", tempdir, getpid());
+}
+
+
+// Prepare the socket at the given path.
 static int
-open_auth_socket()
+open_auth_socket(const char* sockpath)
 {
     struct sockaddr_un addr;
     mode_t um;
@@ -95,19 +111,15 @@ open_auth_socket()
     if (fd < 0)
         cleanup_warn("socket");
 
-    if (!sockpath[0]) {
-        strlcpy(tempdir, "/tmp/ssh-XXXXXX", sizeof(tempdir));
-        if (!mkdtemp(tempdir))
-            cleanup_warn("mkdtemp");
-        snprintf(sockpath, sizeof(sockpath), "%s/agent.%d", tempdir, getpid());
-    }
-
     addr.sun_family = AF_UNIX;
     strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
     um = umask(S_IXUSR | S_IRWXG | S_IRWXO);
     if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
         cleanup_warn("bind");
     umask(um);
+
+    // NB: Don't set cleanup_sockpath until after it's bound
+    strlcpy(cleanup_sockpath, sockpath, sizeof(cleanup_sockpath));
 
     if (listen(fd, 128) < 0)
         cleanup_warn("listen");
@@ -237,6 +249,7 @@ do_agent_loop(int sockfd)
 int
 main(int argc, char *argv[])
 {
+    char sockpath[UNIX_PATH_LEN] = "";
     static struct option long_options[] = {
         { "help", no_argument, 0, 'h' },
         { "version", no_argument, 0, 'v' },
@@ -348,7 +361,9 @@ main(int argc, char *argv[])
     signal(SIGHUP, cleanup_signal);
     signal(SIGTERM, cleanup_signal);
 
-    sockfd = open_auth_socket();
+    if (!sockpath[0])
+        create_socket_path(sockpath, sizeof(sockpath));
+    sockfd = open_auth_socket(sockpath);
 
     if (optind < argc) {
         const char **subargv = (const char **)argv + optind;
