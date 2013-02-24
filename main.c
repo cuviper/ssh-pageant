@@ -107,7 +107,7 @@ open_auth_socket(const char* sockpath)
     mode_t um;
     int fd;
 
-    fd = socket(PF_LOCAL, SOCK_STREAM, 0);
+    fd = socket(PF_LOCAL, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if (fd < 0)
         cleanup_warn("socket");
 
@@ -196,7 +196,7 @@ do_agent_loop(int sockfd)
             cleanup_warn("select");
 
         if (FD_ISSET(sockfd, &do_read_set)) {
-            int s = accept(sockfd, NULL, 0);
+            int s = accept4(sockfd, NULL, NULL, SOCK_CLOEXEC);
             if (s >= FD_SETSIZE) {
                 warnx("accept: Too many connections");
                 close(s);
