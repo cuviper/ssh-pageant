@@ -280,7 +280,7 @@ main(int argc, char *argv[])
                 printf("  -d             Enable debug mode\n");
                 printf("  -q             Enable quiet mode\n");
                 printf("  -a SOCKET      Bind to a specific socket address\n");
-                printf("  -t TIME        Limit key lifetime (not implemented)\n");
+                printf("  -t TIME        Limit key lifetime (not supported by Pageant)\n");
                 return 0;
 
             case 'v':
@@ -355,7 +355,7 @@ main(int argc, char *argv[])
     }
 
     if (opt_lifetime && !opt_quiet)
-        warnx("option is not implemented -- t");
+        warnx("option is not supported by Pageant -- t");
 
     signal(SIGINT, cleanup_signal);
     signal(SIGHUP, cleanup_signal);
