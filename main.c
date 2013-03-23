@@ -28,6 +28,12 @@
 #include "winpgntc.h"
 
 
+// Cygwin now has UNIX_PATH_MAX, but used to be _LEN
+#ifndef UNIX_PATH_MAX
+#define UNIX_PATH_MAX UNIX_PATH_LEN
+#endif
+
+
 #define FD_FOREACH(fd, set) \
     for (fd = 0; fd < FD_SETSIZE; ++fd) \
         if (FD_ISSET(fd, set))
@@ -39,8 +45,8 @@ struct fd_buf {
 };
 
 
-static char cleanup_tempdir[UNIX_PATH_LEN] = "";
-static char cleanup_sockpath[UNIX_PATH_LEN] = "";
+static char cleanup_tempdir[UNIX_PATH_MAX] = "";
+static char cleanup_sockpath[UNIX_PATH_MAX] = "";
 
 
 static void cleanup_exit(int status) __attribute__((noreturn));
@@ -292,7 +298,7 @@ do_agent_loop(int sockfd)
 int
 main(int argc, char *argv[])
 {
-    char sockpath[UNIX_PATH_LEN] = "";
+    char sockpath[UNIX_PATH_MAX] = "";
     static struct option long_options[] = {
         { "help", no_argument, 0, 'h' },
         { "version", no_argument, 0, 'v' },
