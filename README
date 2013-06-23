@@ -1,0 +1,84 @@
+ssh-pageant 1.3
+------------------------------------------------------------------------------
+Home:   http://cuviper.github.com/ssh-pageant/
+Issues: http://github.com/cuviper/ssh-pageant/issues
+------------------------------------------------------------------------------
+
+ssh-pageant is an SSH authentication agent for Cygwin that links OpenSSH to
+PuTTY's Pageant.  It acts very much like ssh-agent, except it leaves the key
+storage to Pageant.  You can use ssh-pageant to automate SSH connections from
+the Cygwin shell, and I find this is most helpful for those services built on
+top of SSH, like SFTP file transfers or pushing to secure git repositories.
+
+Like ssh-agent, ssh-pageant starts by setting up the auth socket, and then it
+prints the environment variables that will let openssh connections use that
+socket.  The usual approach is to use your shell's "eval" command to load
+those environment variables automatically.  By default, ssh-pageant outputs
+sh-style commands, but the -c option will change that to csh-style commands.
+
+For example, I just add the following lines to my bash configuration:
+
+~/.bash_profile:
+  if [ -z "$SSH_AUTH_SOCK" -a -x /usr/bin/ssh-pageant ]; then
+    eval $(/usr/bin/ssh-pageant -q)
+  fi
+  trap logout HUP
+
+~/.bash_logout:
+  if [ -x /usr/bin/ssh-pageant -a ! -z "$SSH_PAGEANT_PID" ]; then
+    eval $(/usr/bin/ssh-pageant -qk 2>/dev/null)
+  fi
+
+This will start a new ssh-pageant instance for each login shell.  That's not a
+big deal since they all talk to the same Pageant instance, so you only have to
+add your ssh keys once.  You could also rename ssh-pageant to ssh-agent and
+then use something like keychain to manage a single instance, but I don't find
+that necessary.
+
+Another option starting with ssh-pageant 1.3 is "--reuse".  When used along
+with "-a SOCKET", ssh-pageant will only start a new daemon if that specific
+path is not already accepting connections.  If that path does appear active,
+ssh-pageant will just set SSH_AUTH_SOCK and exit.  When using this, you should
+not kill ssh-pageant in your logout scripts, as other shells might be reusing
+the same socket.
+
+Note that Pageant itself is not started by ssh-pageant.  It is recommended to
+add Pageant to the Windows startup configuration so it is always available.
+
+If Pageant is running, but the agent still reports SSH_AGENT_FAILURE, this
+might be an old SID bug.  This is believed to be generally fixed in release
+1.1, but it also requires updating Pageant to version 0.62 or later.  The other
+known workaround is to launch Pageant using cygstart.
+
+History: Once upon a time I privately developed a Cygwin terminal based on
+PuTTY, which I wanted because I could use Cygwin-native ptys with PuTTY's
+interface.  As part of that I also added an SSH_AUTH_SOCK shim which talked to
+Pageant.  Then I discovered MinTTY, which does the terminal part much better.
+The author wasn't interested in including the SSH_AUTH_SOCK functionality
+though, so instead I split that out into this program, ssh-pageant, and I
+finally published the code in April 2009.
+
+Version History:
+* Sun Jun 23 2013 - 1.3 - allow reusing existing sockets [-r/--reuse]
+* Sat Nov 24 2012 - 1.2 - mirror the exit status of child processes
+* Tue Dec 06 2011 - 1.1 - fixed SID issues
+* Mon Sep 20 2010 - 1.0 - initial release
+
+Links:
+* PuTTY: An SSH client, including the Pageant authentication agent.
+  http://www.chiark.greenend.org.uk/~sgtatham/putty/
+* Cygwin: A Linux-like environment for Windows.
+  http://www.cygwin.com/
+* OpenSSH: The SSH client shipped by Cygwin.
+  http://www.openssh.com/
+* Charade: The friendly competition to ssh-pageant.
+  http://github.com/wesleyd/charade
+
+------------------------------------------------------------------------------
+Copyright (C) 2009-2013  Josh Stone
+License GPLv3+: GNU GPL version 3 or later, http://gnu.org/licenses/gpl.html
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+See the file COPYING for license details.  Part of ssh-pageant is derived from
+the PuTTY program, whose original license is in the file COPYING.PuTTY.
