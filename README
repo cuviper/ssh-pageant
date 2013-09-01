@@ -40,7 +40,13 @@ with "-a SOCKET", ssh-pageant will only start a new daemon if that specific
 path is not already accepting connections.  If that path does appear active,
 ssh-pageant will just set SSH_AUTH_SOCK and exit.  When using this, you should
 not kill ssh-pageant in your logout scripts, as other shells might be reusing
-the same socket.
+the same socket; e.g.:
+
+~/.bashrc:
+  # ssh-pageant
+  # Note: To share the socket between Cygwin and MinGW, ensure to use a path
+  # that resolves to the same location in both via: cygpath --windows {path}
+  eval $(/usr/bin/ssh-pageant -ra /tmp/.ssh-pageant)
 
 Note that Pageant itself is not started by ssh-pageant.  It is recommended to
 add Pageant to the Windows startup configuration so it is always available.
