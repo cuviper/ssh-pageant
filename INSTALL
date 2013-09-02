@@ -1,7 +1,8 @@
 FROM THE BINARY PACKAGE:
 
-Just copy the exe into your PATH, e.g.:
+Just copy the exe into your PATH and ensure it is executable, e.g.:
 $ cp ssh-pageant.exe /usr/bin/
+$ chmod 755 /usr/bin/ssh-pageant.exe
 
 Optionally, copy the manpage as well:
 $ cp ssh-pageant.1 /usr/share/man/man1/
