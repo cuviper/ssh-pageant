@@ -134,15 +134,15 @@ finally published the code in April 2009.
 * [Charade]: The friendly competition to ssh-pageant.
 
 ------------------------------------------------------------------------------
-Copyright (C) 2009-2013  Josh Stone  
+Copyright (C) 2009-2013  Josh Stone
 Licensed under the GNU GPL version 3 or later, http://gnu.org/licenses/gpl.html
 
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
 
-See the `LICENSE` file for details.  
+See the `COPYING` file for license details.
 Part of ssh-pageant is derived from the PuTTY program, whose original license is
-in the file `LICENSE.PuTTY`.
+in the file `COPYING.PuTTY`.
 
 
 [binary releases]: https://github.com/cuviper/ssh-pageant/releases
