@@ -323,16 +323,16 @@ main(int argc, char *argv[])
             case 'h':
                 printf("Usage: %s [options] [command [arg ...]]\n", prog);
                 printf("Options:\n");
-                printf("  -h, --help     Display this help information\n");
-                printf("  -v, --version  Display version information\n");
-                printf("  -c             Use C-style shell commands\n");
-                printf("  -s             Use Bourne-style shell commands\n");
-                printf("  -k             Kill the current %s\n", prog);
-                printf("  -d             Enable debug mode\n");
-                printf("  -q             Enable quiet mode\n");
-                printf("  -a SOCKET      Bind to a specific socket address\n");
-                printf("  -r, --reuse    Allow reusing an existing -a SOCKET\n");
-                printf("  -t TIME        Limit key lifetime (not supported by Pageant)\n");
+                printf("  -h, --help     Show this help.\n");
+                printf("  -v, --version  Display version information.\n");
+                printf("  -c             Generate C-shell commands on stdout.\n");
+                printf("  -s             Generate Bourne shell commands on stdout. (default)\n");
+                printf("  -k             Kill the current %s.\n", prog);
+                printf("  -d             Enable debug mode.\n");
+                printf("  -q             Enable quiet mode.\n");
+                printf("  -a SOCKET      Create socket on a specific path.\n");
+                printf("  -r, --reuse    Allow to reuse an existing -a SOCKET.\n");
+                printf("  -t TIME        Limit key lifetime in seconds (not supported by Pageant).\n");
                 return 0;
 
             case 'v':

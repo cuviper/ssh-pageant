@@ -7,7 +7,7 @@ PROGRAM = ssh-pageant.exe
 SRCS = main.c winpgntc.c
 HDRS = winpgntc.h
 MANPAGE = ssh-pageant.1
-DOCS = README COPYING COPYING.PuTTY
+DOCS = README.md COPYING COPYING.PuTTY
 
 OBJS = $(SRCS:.c=.o)
 DEPS = $(OBJS:.o=.d)
