@@ -1,6 +1,6 @@
 /*
  * ssh-pageant main code.
- * Copyright (C) 2009-2013  Josh Stone
+ * Copyright (C) 2009-2014  Josh Stone
  *
  * This file is part of ssh-pageant, and is free software: you can
  * redistribute it and/or modify it under the terms of the GNU General
@@ -11,7 +11,6 @@
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
-#include <libgen.h>
 #include <process.h>
 #include <signal.h>
 #include <stdio.h>
@@ -307,7 +306,6 @@ main(int argc, char *argv[])
     };
 
     int sockfd = -1;
-    const char *prog = basename(argv[0]);
 
     int opt;
     int opt_debug = 0;
@@ -321,13 +319,13 @@ main(int argc, char *argv[])
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
-                printf("Usage: %s [options] [command [arg ...]]\n", prog);
+                printf("Usage: %s [options] [command [arg ...]]\n", program_invocation_short_name);
                 printf("Options:\n");
                 printf("  -h, --help     Show this help.\n");
                 printf("  -v, --version  Display version information.\n");
                 printf("  -c             Generate C-shell commands on stdout.\n");
                 printf("  -s             Generate Bourne shell commands on stdout. (default)\n");
-                printf("  -k             Kill the current %s.\n", prog);
+                printf("  -k             Kill the current %s.\n", program_invocation_short_name);
                 printf("  -d             Enable debug mode.\n");
                 printf("  -q             Enable quiet mode.\n");
                 printf("  -a SOCKET      Create socket on a specific path.\n");
