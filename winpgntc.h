@@ -1,6 +1,6 @@
 /*
  * Pageant client header.
- * Copyright (C) 2009  Josh Stone
+ * Copyright (C) 2009,2014  Josh Stone
  *
  * This file is part of ssh-pageant, and is free software: you can
  * redistribute it and/or modify it under the terms of the GNU General
@@ -14,6 +14,12 @@
 #include <arpa/inet.h>
 
 #define AGENT_MAX_MSGLEN  8192
+
+#ifdef __MSYS__
+// MSYS doesn't have stdint.h or uint32_t,
+// but its ntohl wants unsigned long anyway.
+typedef unsigned long uint32_t;
+#endif
 
 extern void agent_query(void *buf);
 

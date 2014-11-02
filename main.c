@@ -8,7 +8,8 @@
  * version 3 of the License, or (at your option) any later version.
  */
 
-#include <err.h>
+#include "compat.h"
+
 #include <errno.h>
 #include <getopt.h>
 #include <process.h>
@@ -25,12 +26,6 @@
 #include <unistd.h>
 
 #include "winpgntc.h"
-
-
-// Cygwin now has UNIX_PATH_MAX, but used to be _LEN
-#ifndef UNIX_PATH_MAX
-#define UNIX_PATH_MAX UNIX_PATH_LEN
-#endif
 
 
 #define FD_FOREACH(fd, set) \

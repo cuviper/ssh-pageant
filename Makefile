@@ -33,6 +33,7 @@ uninstall:
 $(PROGRAM): $(OBJS)
 	$(CC) $(LDFLAGS) $(LOADLIBES) $^ $(LDLIBS) -o $@
 
+CC = gcc
 CFLAGS = -O2 -Werror -Wall -Wextra -MMD
 
 CSCOPE = $(firstword $(shell which cscope mlcscope 2>/dev/null) false)
