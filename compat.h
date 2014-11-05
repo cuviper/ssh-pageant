@@ -21,6 +21,7 @@
 #ifdef __MSYS__
 
 #include <unistd.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,7 +51,7 @@ static char *
 mkdtemp(char *template)
 {
     char *path = mktemp(template);
-    if (path && mkdir(template, S_IRWXU) == 0)
+    if (path && mkdir(path, S_IRWXU) == 0)
         return path;
     return NULL;
 }
@@ -60,7 +61,8 @@ static size_t
 strlcpy(char *dst, const char *src, size_t size)
 {
     strncpy(dst, src, size);
-    dst[size - 1] = '\0';
+    if (size > 0)
+        dst[size - 1] = '\0';
     return strlen(src);
 }
 
@@ -80,7 +82,14 @@ socket_ext(int domain, int type, int protocol)
 static int
 accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags)
 {
-    int fd = accept(sockfd, addr, addrlen);
+    int fd;
+
+    if (flags & ~SOCK_CLOEXEC) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    fd = accept(sockfd, addr, addrlen);
     if (fd >= 0 && flags & SOCK_CLOEXEC)
         fcntl(fd, F_SETFD, FD_CLOEXEC);
     return fd;
