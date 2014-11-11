@@ -289,6 +289,36 @@ do_agent_loop(int sockfd)
 }
 
 
+// Quote and escape a string for shell eval.
+// Caller must free the result.
+static char *
+shell_escape(const char *s)
+{
+    // The pessimistic growth is *4, when every character is ' mapped to '\''.
+    // (No need to be clever.)  Add room for outer quotes and terminator.
+    size_t len = strlen(s);
+    char *mem = calloc(len + 1, 4);
+    if (!mem)
+        return NULL;
+
+    char c, *out = mem;
+    *out++ = '\''; // open the string
+    for (c = *s++; c; c = *s++) {
+        if (c == '\'') {
+            *out++ = '\''; // close,
+            *out++ = '\\'; // escape
+            *out++ = '\''; // the quote,
+            *out++ = '\''; // reopen
+        }
+        else
+            *out++ = c; // plain copy
+    }
+    *out++ = '\''; // close the string
+    *out++ = '\0'; // terminate
+    return mem;
+}
+
+
 int
 main(int argc, char *argv[])
 {
@@ -443,16 +473,20 @@ main(int argc, char *argv[])
         if (pid < 0)
             cleanup_warn("fork");
         if (pid > 0) {
+            char *escaped_sockpath = shell_escape(sockpath);
+            if (!escaped_sockpath)
+                cleanup_warn("shell_escape");
             if (opt_csh) {
-                printf("setenv SSH_AUTH_SOCK %s;\n", sockpath);
+                printf("setenv SSH_AUTH_SOCK %s;\n", escaped_sockpath);
                 if (p_set_pid_env)
                     printf("setenv SSH_PAGEANT_PID %d;\n", pid);
             }
             else {
-                printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", sockpath);
+                printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", escaped_sockpath);
                 if (p_set_pid_env)
                     printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
             }
+            free(escaped_sockpath);
             if (p_set_pid_env && !opt_quiet)
                 printf("echo ssh-pageant pid %d;\n", pid);
             if (p_daemonize)
