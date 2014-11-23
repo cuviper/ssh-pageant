@@ -1,10 +1,10 @@
 # ssh-pageant
-_An SSH authentication agent for Cygwin that links OpenSSH to PuTTY's Pageant._
+_An SSH authentication agent for Cygwin/MSYS that links OpenSSH to PuTTY's Pageant._
 
 ssh-pageant is a tiny tool for Windows that allows you to use SSH keys from
-[PuTTY]'s Pageant in [Cygwin] shell environments.
+[PuTTY]'s Pageant in [Cygwin] and [MSYS] shell environments.
 
-You can use ssh-pageant to automate SSH connections from the Cygwin shell, which
+You can use ssh-pageant to automate SSH connections from those shells, which
 is useful for services built on top of SSH, like SFTP file transfers or pushing
 to secure git repositories.
 
@@ -18,7 +18,8 @@ variables, which allows OpenSSH connections to use it.
 The `INSTALL` file describes how to build and install `ssh-pageant` from source,
 but the easiest way is to use the readily-available [binary releases]:
 
-1. Download the pre-built [32-bit] or the [64-bit] release.
+1. Download the pre-built [32-bit] or [64-bit] release for Cygwin, or
+the [32-bit][32-bit-msys] release for MSYS.
 
 2. Just copy the exe into your PATH and ensure it is executable:
 
@@ -130,6 +131,7 @@ finally published the code in April 2009.
 
 * [PuTTY]: An SSH client for Windows (including the Pageant authentication agent).
 * [Cygwin]: A Linux-like environment for Windows.
+* [MSYS]: Another Linux-like environment, made to supplement MinGW.
 * [OpenSSH]: The SSH client shipped by Cygwin.
 * [Charade]: The friendly competition to ssh-pageant.
 
@@ -148,8 +150,10 @@ in the file `COPYING.PuTTY`.
 [binary releases]: https://github.com/cuviper/ssh-pageant/releases
 [32-bit]: https://github.com/cuviper/ssh-pageant/releases/tag/v1.3-prebuilt
 [64-bit]: https://github.com/cuviper/ssh-pageant/releases/tag/v1.3-prebuilt64
+[32-bit-msys]: #
 [issues]: http://github.com/cuviper/ssh-pageant/issues
 [PuTTY]: http://www.chiark.greenend.org.uk/~sgtatham/putty/
 [Cygwin]: http://www.cygwin.com/
+[MSYS]: http://www.mingw.org/wiki/MSYS
 [OpenSSH]: http://www.openssh.com/
 [Charade]: http://github.com/wesleyd/charade
