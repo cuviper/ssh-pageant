@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/cygwin.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -112,8 +113,12 @@ open_auth_socket(const char* sockpath)
     if (fd < 0)
         cleanup_warn("socket");
 
+    // NB: Cygwin ignores umask on DOS paths, so ensure it's POSIX for bind.
+    if (cygwin_conv_path(CCP_WIN_A_TO_POSIX | CCP_RELATIVE, sockpath,
+                addr.sun_path, sizeof(addr.sun_path)) < 0)
+        cleanup_warn("cygwin_conv_path");
     addr.sun_family = AF_UNIX;
-    strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
+
     um = umask(S_IXUSR | S_IRWXG | S_IRWXO);
     if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
         cleanup_warn("bind");

@@ -26,9 +26,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/cygwin.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <windef.h>
 
 // MSYS doesn't have program_invocation_short_name.
 // Take the easy way out and hard-code it.
@@ -93,6 +95,28 @@ accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags)
     if (fd >= 0 && flags & SOCK_CLOEXEC)
         fcntl(fd, F_SETFD, FD_CLOEXEC);
     return fd;
+}
+
+// MSYS only has the old path conversion APIs, which Cygwin has deprecated.
+#define CCP_WIN_A_TO_POSIX 2
+#define CCP_RELATIVE 0x100
+static ssize_t
+cygwin_conv_path (unsigned what, const void *from, void *to, size_t size)
+{
+    char posix[MAX_PATH];
+    if ((what & 3) != CCP_WIN_A_TO_POSIX) {
+        errno = ENOSYS;
+        return -1;
+    }
+    if (((what & CCP_RELATIVE) ? cygwin_conv_to_posix_path(from, posix)
+                : cygwin_conv_to_full_posix_path(from, posix)) != 0)
+        return -1;
+    if (!size)
+        return strlen(posix) + 1;
+    if (strlcpy(to, posix, size) < size)
+        return 0;
+    errno = ENOSPC;
+    return -1;
 }
 
 #else /* __CYGWIN__ */
