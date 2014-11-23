@@ -364,8 +364,8 @@ main(int argc, char *argv[])
                 return 0;
 
             case 'v':
-                printf("ssh-pageant 1.3\n");
-                printf("Copyright (C) 2009-2013  Josh Stone\n");
+                printf("ssh-pageant 1.4\n");
+                printf("Copyright (C) 2009-2014  Josh Stone\n");
                 printf("License GPLv3+: GNU GPL version 3 or later"
                        " <http://gnu.org/licenses/gpl.html>.\n");
                 printf("This is free software:"

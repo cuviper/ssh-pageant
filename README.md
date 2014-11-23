@@ -109,6 +109,7 @@ To uninstall, just remove the copied files:
 
 ## Version History
 
+* 2014-11-23: 1.4 - MSYS support and more robust socket paths.
 * 2013-06-23: 1.3 - Allow reusing existing sockets via `-r`/`--reuse`.
 * 2012-11-24: 1.2 - Mirror the exit status of child processes.
 * 2011-06-12: 1.1 - Fixed SID issues.
@@ -144,7 +145,7 @@ finally published the code in April 2009.
 * [Charade]: The friendly competition to ssh-pageant.
 
 ------------------------------------------------------------------------------
-Copyright (C) 2009-2013  Josh Stone  
+Copyright (C) 2009-2014  Josh Stone  
 Licensed under the GNU GPL version 3 or later, http://gnu.org/licenses/gpl.html
 
 This is free software: you are free to change and redistribute it.
@@ -156,9 +157,9 @@ in the file `COPYING.PuTTY`.
 
 
 [binary releases]: https://github.com/cuviper/ssh-pageant/releases
-[32-bit]: https://github.com/cuviper/ssh-pageant/releases/tag/v1.3-prebuilt
-[64-bit]: https://github.com/cuviper/ssh-pageant/releases/tag/v1.3-prebuilt64
-[32-bit-msys]: #
+[32-bit]: https://github.com/cuviper/ssh-pageant/releases/tag/v1.4-prebuilt-cygwin32
+[64-bit]: https://github.com/cuviper/ssh-pageant/releases/tag/v1.4-prebuilt-cygwin64
+[32-bit-msys]: https://github.com/cuviper/ssh-pageant/releases/tag/v1.4-prebuilt-msys32
 [issues]: http://github.com/cuviper/ssh-pageant/issues
 [PuTTY]: http://www.chiark.greenend.org.uk/~sgtatham/putty/
 [Cygwin]: http://www.cygwin.com/
