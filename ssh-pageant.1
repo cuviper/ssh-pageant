@@ -1,0 +1,100 @@
+.TH ssh\-pageant 1 2014-11-23 1.4 Cygwin
+
+.SH NAME
+ssh\-pageant - authentication agent
+.SH SYNOPSIS
+\fBssh\-pageant\fP [\fB\-c\fP | \fB\-s\fP] [\fB\-a\fP \fIsocket\fP]
+[\fIcommand\fP [\fIarg ...\fP]]
+.br
+\fBssh\-pageant\fP [\fB\-c\fP | \fB\-s\fP] \fB\-k\fP 
+.SH DESCRIPTION
+\fBssh\-pageant\fP is an SSH authentication agent for Cygwin that links OpenSSH
+to PuTTY's Pageant.  It acts very much like ssh\-agent, except it leaves the key
+storage to a separately-invoked Pageant instance.
+.SH INVOCATION
+A UNIX-domain socket is first created which proxies authentication requests to
+Pageant.  If a \fIcommand\fP is supplied, this is executed with any additional
+arguments given and with environment variables set to use the new socket.
+Otherwise, ssh\-pageant runs in the background and prints shell commands
+intended to set the same environment variables for the calling shell.
+.PP
+If invoked with \fB\-k\fP, ssh\-pageant will instead kill its previous instance
+and print shell commands to unset the environment variables.
+.SH OPTIONS
+The standard GNU option formats are accepted, with single dashes introducing
+short options and double dashes introducing long options, e.g.
+\fB\-o\fP\ \fIarg\fP, \fB\-\-option\fP\ \fIarg\fP, and
+\fB\-\-option=\fP\fIarg\fP.  Options marked with \fB(*)\fP are meant to be
+equivalent to the same option in ssh\-agent.
+.TP
+\fB\-h\fP, \fB\-\-help\fP
+Display a summary of options and exit.
+.TP
+\fB\-v\fP, \fB\-\-version\fP
+Display version and copyright information and exit.
+.TP
+\fB\-c\fP
+Use C-style shell commands. \fB(*)\fP
+.TP
+\fB\-s\fP
+Use Bourne-style shell commands. \fB(*)\fP
+.TP
+\fB\-k\fP
+Kill the current ssh-pageant process. \fB(*)\fP
+.TP
+\fB\-d\fP
+Enable debug mode. \fB(*)\fP
+.TP
+\fB\-q\fP
+Enable quiet mode.
+.TP
+\fB\-a\fP \fIsocket\fP
+Bind to a specific \fIsocket\fP address. \fB(*)\fP
+.TP
+\fB\-r\fP, \fB\-\-reuse\fP
+Allow reusing an existing \fB\-a\fP \fIsocket\fP
+.TP
+\fB\-t\fP \fItime\fP
+Limit key lifetime (not supported by Pageant). \fB(*)\fP
+.SH USAGE
+The commands that ssh\-pageant outputs are best used with the shell's "eval"
+command.  For example, this configuration will automatically configure the
+agent for each bash session:
+.TP
+\fB~/.bash_profile\fP:
+.nf
+if [ -z "$SSH_AUTH_SOCK" -a -x /usr/bin/ssh-pageant ]; then
+  eval $(/usr/bin/ssh-pageant -q)
+fi
+trap logout HUP
+.fi
+.TP
+\fB~/.bash_logout\fP:
+.nf
+if [ -x /usr/bin/ssh-pageant -a ! -z "$SSH_PAGEANT_PID" ]; then
+  eval $(/usr/bin/ssh-pageant -qk 2>/dev/null)
+fi
+.fi
+.SH ENVIRONMENT VARIABLES
+.TP
+\fBSHELL\fP
+Determines the default style of shell commands.  If it contains "csh", then
+\fB\-c\fP will be used, otherwise \fB\-s\fP is assumed.
+.TP
+\fBSSH_AUTH_SOCK\fP
+Holds the path to the agent's UNIX-domain socket.
+.TP
+\fBSSH_PAGEANT_PID\fP
+Holds the agent's process ID, used by \fB\-k\fP to kill it.
+.SH ISSUES
+Please report bugs or suggest enhancements via the issue tracker at
+<\fIhttp://github.com/cuviper/ssh-pageant/issues\fP>.
+.SH COPYRIGHT
+Copyright (C) 2009-2014  Josh Stone
+.br
+License GPLv3+: GNU GPL version 3 or later
+<\fIhttp://gnu.org/licenses/gpl.html\fP>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+.SH SEE ALSO
+.BR ssh-agent (1)

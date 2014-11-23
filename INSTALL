@@ -1,0 +1,32 @@
+FROM THE BINARY PACKAGE:
+
+Just copy the exe into your PATH and ensure it is executable, e.g.:
+$ cp ssh-pageant.exe /usr/bin/
+$ chmod 755 /usr/bin/ssh-pageant.exe
+
+Optionally, copy the manpage as well:
+$ cp ssh-pageant.1 /usr/share/man/man1/
+
+To uninstall, just remove those copied files:
+$ rm /usr/bin/ssh-pageant.exe
+$ rm /usr/share/man/man1/ssh-pageant.1
+
+
+FROM SOURCE:
+
+First, make sure you've already installed "make" and "gcc-core" from the Cygwin
+installer.  If you'd like to follow the latest source, install "git" as well.
+Then retrieve the latest with:
+$ git clone git://github.com/cuviper/ssh-pageant.git
+
+To compile ssh-pageant:
+$ make
+
+To install to the default path, /usr:
+$ make install
+
+To install to some other path, e.g. /usr/local:
+$ make install PREFIX=/usr/local
+
+To uninstall:
+$ make uninstall  # with PREFIX too, if installed that way
