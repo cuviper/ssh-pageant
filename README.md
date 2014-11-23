@@ -41,28 +41,36 @@ the [32-bit][32-bit-msys] release for MSYS.
 2. Edit your `~/.bashrc` (or `~/.bash_profile`) to add the following:
 
         # ssh-pageant
-        eval $(/usr/bin/ssh-pageant -ra /tmp/.ssh-pageant)
+        eval $(/usr/bin/ssh-pageant -r -a "/tmp/.ssh-pageant-$USERNAME")
 
     To explain:
+
     * This leverages the `-r`/`--reuse` option (available since 1.3) in
       combination with `-a SOCKET`, which will only start a new daemon if the
       specified path does not accept connections already.  If the socket appears
       to be active, it will just set `SSH_AUTH_SOCK` and exit.
+
+    * The exact path used for `-a` is arbitrary.  The socket will be created
+      with only user-accessible permissions, as long as the filesystem is not
+      mounted `noacl`, but you may still want to use a more private path than
+      shown above on multi-user systems.
+
     * When using this, the `ssh-pageant` daemon remains to be active (and
       visible in your task manager).  You should not kill the process, since
       open shells might still be using the socket.
-    * Usage of `eval` to load the environment variables is the usual approach.
+
+    * Using `eval` will set the environment variables in the current shell.
       By default, ssh-pageant outputs sh-style commands.  Use the `-c` option
       for csh-style commands.
-    * To share the socket between Cygwin and [msysgit/MinGW](http://msysgit.github.io/),
-      ensure to use a path that resolves to the same location in both
-      environments via `cygpath --windows {path}`
-
 
 You could also rename `ssh-pageant` to `ssh-agent` and then use something like
 `keychain` to manage a single instance (the approach of [Charade]), but that is
 unnecessary with the `--reuse` option.
 
+It may be possible to share a Cygwin socket with external tools like
+[msysgit](http://msysgit.github.io/), if you use a socket path accessible by
+both runtimes.  Use `cygpath --windows {path}` to help normalize paths for
+system-wide use.
 
 ## Options
 
