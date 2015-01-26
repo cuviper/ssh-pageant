@@ -89,6 +89,9 @@ Holds the agent's process ID, used by \fB\-k\fP to kill it.
 .SH ISSUES
 Please report bugs or suggest enhancements via the issue tracker at
 <\fIhttp://github.com/cuviper/ssh-pageant/issues\fP>.
+.SH CAVEAT
+Since pageant doesn't support time limits, invoking ssh-add with the -t option
+will result in a response of SSH_AGENT_FAILURE.
 .SH COPYRIGHT
 Copyright (C) 2009-2014  Josh Stone
 .br
