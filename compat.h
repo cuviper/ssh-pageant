@@ -18,7 +18,7 @@
 #define UNIX_PATH_MAX UNIX_PATH_LEN
 #endif
 
-#ifdef __MSYS__
+#if defined(__MSYS__) && !defined(__NEWLIB__)
 
 #include <unistd.h>
 #include <errno.h>
@@ -123,6 +123,6 @@ cygwin_conv_path (unsigned what, const void *from, void *to, size_t size)
 
 #include <err.h>
 
-#endif
+#endif // defined(__MSYS__) && !defined(__NEWLIB__)
 
 #endif /* __COMPAT_H__ */
