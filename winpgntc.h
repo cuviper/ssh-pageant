@@ -15,11 +15,11 @@
 
 #define AGENT_MAX_MSGLEN  8192
 
-#ifdef __MSYS__
+#if defined(__MSYS__) && !defined(__NEWLIB__)
 // MSYS doesn't have stdint.h or uint32_t,
 // but its ntohl wants unsigned long anyway.
 typedef unsigned long uint32_t;
-#endif
+#endif // defined(__MSYS__) && !defined(__NEWLIB__)
 
 extern void agent_query(void *buf);
 
