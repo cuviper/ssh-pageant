@@ -30,6 +30,7 @@ the [32-bit][32-bit-msys] release for MSYS.
 
         $ cp ssh-pageant.1 /usr/share/man/man1/
 
+Alternatively, if you are running [MSYS2](https://msys2.github.io/), just run `pacman -S ssh-pageant`.
 
 ## Usage
 
