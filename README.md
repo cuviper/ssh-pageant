@@ -15,8 +15,10 @@ variables, which allows OpenSSH connections to use it.
 
 ## Installation
 
-The `INSTALL` file describes how to build and install `ssh-pageant` from source,
-but the easiest way is to use the readily-available [binary releases]:
+You can install the latest release of `ssh-pageant` for Cygwin using the
+standard `setup.exe` program.  For MSYS2, just run `pacman -S ssh-pageant`.
+
+Otherwise, you can use the readily-available [binary releases]:
 
 1. Download the pre-built [32-bit] or [64-bit] release for Cygwin, or
 the [32-bit][32-bit-msys] release for MSYS.
@@ -30,7 +32,8 @@ the [32-bit][32-bit-msys] release for MSYS.
 
         $ cp ssh-pageant.1 /usr/share/man/man1/
 
-Alternatively, if you are running [MSYS2](https://msys2.github.io/), just run `pacman -S ssh-pageant`.
+The `INSTALL` file describes how to build and install `ssh-pageant` from source.
+
 
 ## Usage
 
@@ -142,7 +145,8 @@ finally published the code in April 2009.
 * [PuTTY]: An SSH client for Windows (including the Pageant authentication agent).
 * [Cygwin]: A Linux-like environment for Windows.
 * [MSYS]: Another Linux-like environment, made to supplement MinGW.
-* [OpenSSH]: The SSH client shipped by Cygwin.
+* [MSYS2]: The modern successor to MSYS, staying closer to Cygwin development.
+* [OpenSSH]: The SSH client shipped by Cygwin/MSYS.
 * [Charade]: The friendly competition to ssh-pageant.
 
 ------------------------------------------------------------------------------
@@ -165,5 +169,6 @@ in the file `COPYING.PuTTY`.
 [PuTTY]: http://www.chiark.greenend.org.uk/~sgtatham/putty/
 [Cygwin]: http://www.cygwin.com/
 [MSYS]: http://www.mingw.org/wiki/MSYS
+[MSYS2]: https://msys2.github.io/
 [OpenSSH]: http://www.openssh.com/
 [Charade]: http://github.com/wesleyd/charade
