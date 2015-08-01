@@ -1,6 +1,6 @@
 /*
  * ssh-pageant main code.
- * Copyright (C) 2009-2014  Josh Stone
+ * Copyright (C) 2009-2015  Josh Stone
  *
  * This file is part of ssh-pageant, and is free software: you can
  * redistribute it and/or modify it under the terms of the GNU General
@@ -159,11 +159,7 @@ reuse_socket_path(const char* sockpath)
     else if (errno == ECONNREFUSED) {
         // Either it's not listening, or not a socket at all.  If it was at
         // least a socket, remove it so it can be replaced.
-        struct stat st;
-        if (stat(sockpath, &st) < 0)
-            cleanup_warn("stat");
-
-        if (S_ISSOCK(st.st_mode)) {
+        if (path_is_socket(sockpath)) {
             if (unlink(sockpath) < 0)
                 cleanup_warn("unlink");
             return 0;

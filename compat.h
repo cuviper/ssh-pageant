@@ -1,6 +1,6 @@
 /*
  * ssh-pageant compatability header.
- * Copyright (C) 2014  Josh Stone
+ * Copyright (C) 2014-2015  Josh Stone
  *
  * This file is part of ssh-pageant, and is free software: you can
  * redistribute it and/or modify it under the terms of the GNU General
@@ -119,9 +119,52 @@ cygwin_conv_path (unsigned what, const void *from, void *to, size_t size)
     return -1;
 }
 
+static int
+path_is_socket(const char *path)
+{
+    struct stat st;
+    if (stat(path, &st) == 0) {
+        // MSYS is buggy, always seems to set S_IFREG for socket paths.
+        // (and it sets S_IFCHR on a socket fd, incidentally)
+
+        if (S_ISSOCK(st.st_mode))
+            return 1; // it worked, what a pleasant surprise!
+
+        // A "file" which is really a socket will be exactly 52 bytes, like:
+        //   "!<socket >57471 DEAD1E8B-AA6937FE-D3D138F3-C2EBE542\0"
+        // with a random port and UUID, of course.
+        // (later cygwin adds " s" in the middle, for 54 bytes total)
+        if (S_ISREG(st.st_mode) && st.st_size == 52) {
+            FILE *f = fopen(path, "r");
+            if (f) {
+                int port, uuid[4];
+                int scanned = fscanf(f, "!<socket >%d %x-%x-%x-%x",
+                        &port, &uuid[0], &uuid[1], &uuid[2], &uuid[3]);
+                fclose(f);
+                if (scanned == 5)
+                    return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 #else /* __CYGWIN__ */
 
+#include <unistd.h>
 #include <err.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+
+static int
+path_is_socket(const char *path)
+{
+    struct stat st;
+    if (stat(path, &st) == 0)
+        return S_ISSOCK(st.st_mode);
+    return 0;
+}
 
 #endif // defined(__MSYS__) && !defined(__NEWLIB__)
 
