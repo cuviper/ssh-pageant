@@ -32,7 +32,8 @@
 #define FD_FOREACH(fd, set) \
     for (fd = 0; fd < FD_SETSIZE; ++fd) \
         if (FD_ISSET(fd, set))
-
+            
+typedef enum {BOURNE, C_SH, FISH} shell_type;
 
 struct fd_buf {
     int recv, send;
@@ -319,6 +320,19 @@ shell_escape(const char *s)
     return mem;
 }
 
+// Feel free to add complex shell detection logic
+static shell_type
+get_shell()
+{
+    shell_type detected_shell = BOURNE;
+    char * shell_env = getenv("SHELL") ?: "";
+
+    if (!!strstr(shell_env, "csh")) {
+        detected_shell = C_SH;
+    }
+
+    return detected_shell;
+}
 
 int
 main(int argc, char *argv[])
@@ -339,9 +353,10 @@ main(int argc, char *argv[])
     int opt_kill = 0;
     int opt_reuse = 0;
     int opt_lifetime = 0;
-    int opt_csh = !!strstr(getenv("SHELL") ?: "", "csh");
+    shell_type opt_sh = get_shell();
 
-    while ((opt = getopt_long(argc, argv, "+hvcskdqa:rt:",
+
+    while ((opt = getopt_long(argc, argv, "+hvcsS:kdqa:rt:",
                               long_options, NULL)) != -1)
         switch (opt) {
             case 'h':
@@ -349,8 +364,9 @@ main(int argc, char *argv[])
                 printf("Options:\n");
                 printf("  -h, --help     Show this help.\n");
                 printf("  -v, --version  Display version information.\n");
-                printf("  -c             Generate C-shell commands on stdout.\n");
-                printf("  -s             Generate Bourne shell commands on stdout. (default)\n");
+                printf("  -c             Generate C-shell commands on stdout. This is the default if SHELL looks like it's a csh style of shell.\n");
+                printf("  -s             Generate Bourne shell commands on stdout. This is the default if SHELL does not look like it's a csh style of shell.\n");
+                printf("  -S SHELL       Choose which shell commands to output to stdout. Valid shells are \"C\", \"BOURNE\", \"FISH\". Use this if automatic detection fails.\n");
                 printf("  -k             Kill the current %s.\n", program_invocation_short_name);
                 printf("  -d             Enable debug mode.\n");
                 printf("  -q             Enable quiet mode.\n");
@@ -370,11 +386,21 @@ main(int argc, char *argv[])
                 return 0;
 
             case 'c':
-                opt_csh = 1;
+                opt_sh = C_SH;
                 break;
 
             case 's':
-                opt_csh = 0;
+                opt_sh = BOURNE;
+                break;
+                
+            case 'S':
+                if (!strcasecmp(optarg, "bourne")) {
+                    opt_sh = BOURNE;
+                } else if (!strcasecmp(optarg, "c")) {
+                    opt_sh = C_SH;
+                } else if (!strcasecmp(optarg, "fish")) {
+                    opt_sh = FISH;
+                }
                 break;
 
             case 'k':
@@ -421,13 +447,19 @@ main(int argc, char *argv[])
         pid = atoi(pidenv);
         if (kill(pid, SIGTERM) < 0)
             err(1, "kill(%d)", pid);
-        if (opt_csh) {
-            printf("unsetenv SSH_AUTH_SOCK;\n");
-            printf("unsetenv SSH_PAGEANT_PID;\n");
-        }
-        else {
-            printf("unset SSH_AUTH_SOCK;\n");
-            printf("unset SSH_PAGEANT_PID;\n");
+        switch (opt_sh) {
+            case C_SH:
+                printf("unsetenv SSH_AUTH_SOCK;\n");
+                printf("unsetenv SSH_PAGEANT_PID;\n");
+                break;
+            case BOURNE:
+                printf("unset SSH_AUTH_SOCK;\n");
+                printf("unset SSH_PAGEANT_PID;\n");
+                break;
+            case FISH:
+                printf("set -e SSH_AUTH_SOCK;\n");
+                printf("set -e SSH_PAGEANT_PID;\n");
+                break;
         }
         if (!opt_quiet)
             printf("echo ssh-pageant pid %d killed;\n", pid);
@@ -477,15 +509,22 @@ main(int argc, char *argv[])
             char *escaped_sockpath = shell_escape(sockpath);
             if (!escaped_sockpath)
                 cleanup_warn("shell_escape");
-            if (opt_csh) {
-                printf("setenv SSH_AUTH_SOCK %s;\n", escaped_sockpath);
-                if (p_set_pid_env)
-                    printf("setenv SSH_PAGEANT_PID %d;\n", pid);
-            }
-            else {
-                printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", escaped_sockpath);
-                if (p_set_pid_env)
-                    printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
+            switch (opt_sh) {
+                case C_SH:
+                    printf("setenv SSH_AUTH_SOCK %s;\n", escaped_sockpath);
+                    if (p_set_pid_env)
+                        printf("setenv SSH_PAGEANT_PID %d;\n", pid);
+                    break;
+                case BOURNE:
+                    printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", escaped_sockpath);
+                    if (p_set_pid_env)
+                        printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
+                    break;
+                case FISH:
+                    printf("set -x SSH_AUTH_SOCK %s;\n", escaped_sockpath);
+                    if (p_set_pid_env)
+                        printf("set -x SSH_PAGEANT_PID %d;\n", pid);
+                    break;
             }
             free(escaped_sockpath);
             if (p_set_pid_env && !opt_quiet)

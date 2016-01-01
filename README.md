@@ -64,8 +64,9 @@ The `INSTALL` file describes how to build and install `ssh-pageant` from source.
       open shells might still be using the socket.
 
     * Using `eval` will set the environment variables in the current shell.
-      By default, ssh-pageant outputs sh-style commands.  Use the `-c` option
-      for csh-style commands.
+      By default, ssh-pageant tries to detect the current shell and output
+      appropriate commands. If detection fails, then use the `-S SHELL` option
+      to define a shell type manually.
 
 You could also rename `ssh-pageant` to `ssh-agent` and then use something like
 `keychain` to manage a single instance (the approach of [Charade]), but that is
@@ -85,8 +86,9 @@ system-wide use.
     Options:
       -h, --help     Show this help.
       -v, --version  Display version information.
-      -c             Generate C-shell commands on stdout.
-      -s             Generate Bourne shell commands on stdout. (default)
+      -c             Generate C-shell commands on stdout. This is the default if SHELL looks like it's a csh style of shell.
+      -s             Generate Bourne shell commands on stdout. This is the default if SHELL does not look like it's a csh style of shell.
+      -S SHELL       Choose which shell commands are outputted to stdout. Valid shells are "C", "BOURNE", "FISH". Use this if automatic detection fails.
       -k             Kill the current ssh-pageant.
       -d             Enable debug mode.
       -q             Enable quiet mode.

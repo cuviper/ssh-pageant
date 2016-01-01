@@ -3,10 +3,10 @@
 .SH NAME
 ssh\-pageant \(hy authentication agent
 .SH SYNOPSIS
-\fBssh\-pageant\fP [\fB\-c\fP | \fB\-s\fP] [\fB\-a\fP \fIsocket\fP]
+\fBssh\-pageant\fP [\fB\-c\fP | \fB\-s\fP | \fB\-S\fP \fIshell\fP] [\fB\-a\fP \fIsocket\fP]
 [\fIcommand\fP [\fIarg ...\fP]]
 .br
-\fBssh\-pageant\fP [\fB\-c\fP | \fB\-s\fP] \fB\-k\fP
+\fBssh\-pageant\fP [\fB\-c\fP | \fB\-s\fP | \fB\-S\fP \fIshell\fP] \fB\-k\fP
 .SH DESCRIPTION
 \fBssh\-pageant\fP is an SSH authentication agent for Cygwin that links OpenSSH
 to PuTTY's Pageant.  It acts very much like ssh\-agent, except it leaves the
@@ -34,10 +34,13 @@ Display a summary of options and exit.
 Display version and copyright information and exit.
 .TP
 \fB\-c\fP
-Use C\(hystyle shell commands. \fB(*)\fP
+Use C\(hystyle shell commands. This is the default if SHELL looks like it's a csh style of shell. \fB(*)\fP
 .TP
 \fB\-s\fP
-Use Bourne\(hystyle shell commands. \fB(*)\fP
+Use Bourne\(hystyle shell commands. This is the default if SHELL does not look like it's a csh style of shell. \fB(*)\fP
+.TP
+\fB\-S\fP \fIshell\fP
+Choose which shell commands to output to stdout. Valid shells are "\fBC\fP", "\fBBOURNE\fP", "\fBFISH\fP". Use this if automatic detection fails.
 .TP
 \fB\-k\fP
 Kill the current ssh\-pageant process. \fB(*)\fP
@@ -74,6 +77,13 @@ trap logout HUP
 if [ \-x /usr/bin/ssh\-pageant \-a ! \-z "$SSH_PAGEANT_PID" ]; then
   eval $(/usr/bin/ssh\-pageant \-qk 2>/dev/null)
 fi
+.fi
+.TP
+These commands will configure the agent for each fish session:
+.TP
+\fB~/.config/fish/config.fish\fP:
+.nf
+eval (/usr/bin/ssh-pageant -rq -S fish -a "/tmp/.ssh-pageant-$USERNAME")
 .fi
 .SH ENVIRONMENT VARIABLES
 .TP
