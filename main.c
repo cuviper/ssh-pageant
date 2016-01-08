@@ -32,7 +32,7 @@
 #define FD_FOREACH(fd, set) \
     for (fd = 0; fd < FD_SETSIZE; ++fd) \
         if (FD_ISSET(fd, set))
-            
+
 typedef enum {BOURNE, C_SH, FISH} shell_type;
 
 struct fd_buf {
@@ -334,6 +334,48 @@ get_shell()
     return detected_shell;
 }
 
+static void
+output_unset_env(const shell_type opt_sh)
+{
+    switch (opt_sh) {
+        case C_SH:
+            printf("unsetenv SSH_AUTH_SOCK;\n");
+            printf("unsetenv SSH_PAGEANT_PID;\n");
+            break;
+        case BOURNE:
+            printf("unset SSH_AUTH_SOCK;\n");
+            printf("unset SSH_PAGEANT_PID;\n");
+            break;
+        case FISH:
+            printf("set -e SSH_AUTH_SOCK;\n");
+            printf("set -e SSH_PAGEANT_PID;\n");
+            break;
+    }
+}
+
+
+static void
+output_set_env(const shell_type opt_sh, const int p_set_pid_env, const char *escaped_sockpath, const pid_t pid)
+{
+    switch (opt_sh) {
+        case C_SH:
+            printf("setenv SSH_AUTH_SOCK %s;\n", escaped_sockpath);
+            if (p_set_pid_env)
+                printf("setenv SSH_PAGEANT_PID %d;\n", pid);
+            break;
+        case BOURNE:
+            printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", escaped_sockpath);
+            if (p_set_pid_env)
+                printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
+            break;
+        case FISH:
+            printf("set -x SSH_AUTH_SOCK %s;\n", escaped_sockpath);
+            if (p_set_pid_env)
+                printf("set -x SSH_PAGEANT_PID %d;\n", pid);
+            break;
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -354,7 +396,6 @@ main(int argc, char *argv[])
     int opt_reuse = 0;
     int opt_lifetime = 0;
     shell_type opt_sh = get_shell();
-
 
     while ((opt = getopt_long(argc, argv, "+hvcsS:kdqa:rt:",
                               long_options, NULL)) != -1)
@@ -447,20 +488,7 @@ main(int argc, char *argv[])
         pid = atoi(pidenv);
         if (kill(pid, SIGTERM) < 0)
             err(1, "kill(%d)", pid);
-        switch (opt_sh) {
-            case C_SH:
-                printf("unsetenv SSH_AUTH_SOCK;\n");
-                printf("unsetenv SSH_PAGEANT_PID;\n");
-                break;
-            case BOURNE:
-                printf("unset SSH_AUTH_SOCK;\n");
-                printf("unset SSH_PAGEANT_PID;\n");
-                break;
-            case FISH:
-                printf("set -e SSH_AUTH_SOCK;\n");
-                printf("set -e SSH_PAGEANT_PID;\n");
-                break;
-        }
+        output_unset_env(opt_sh);
         if (!opt_quiet)
             printf("echo ssh-pageant pid %d killed;\n", pid);
         return 0;
@@ -509,23 +537,7 @@ main(int argc, char *argv[])
             char *escaped_sockpath = shell_escape(sockpath);
             if (!escaped_sockpath)
                 cleanup_warn("shell_escape");
-            switch (opt_sh) {
-                case C_SH:
-                    printf("setenv SSH_AUTH_SOCK %s;\n", escaped_sockpath);
-                    if (p_set_pid_env)
-                        printf("setenv SSH_PAGEANT_PID %d;\n", pid);
-                    break;
-                case BOURNE:
-                    printf("SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n", escaped_sockpath);
-                    if (p_set_pid_env)
-                        printf("SSH_PAGEANT_PID=%d; export SSH_PAGEANT_PID;\n", pid);
-                    break;
-                case FISH:
-                    printf("set -x SSH_AUTH_SOCK %s;\n", escaped_sockpath);
-                    if (p_set_pid_env)
-                        printf("set -x SSH_PAGEANT_PID %d;\n", pid);
-                    break;
-            }
+            output_set_env(opt_sh, p_set_pid_env, escaped_sockpath, pid);
             free(escaped_sockpath);
             if (p_set_pid_env && !opt_quiet)
                 printf("echo ssh-pageant pid %d;\n", pid);
