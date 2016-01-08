@@ -322,7 +322,7 @@ shell_escape(const char *s)
 
 // Feel free to add complex shell detection logic
 static shell_type
-get_shell()
+get_shell_guess()
 {
     shell_type detected_shell = BOURNE;
     char * shell_env = getenv("SHELL") ?: "";
@@ -376,6 +376,18 @@ output_set_env(const shell_type opt_sh, const int p_set_pid_env, const char *esc
     }
 }
 
+static shell_type
+parse_shell_option(const char *shell_name)
+{
+    if (!strcasecmp(shell_name, "fish")) {
+        return FISH;
+    } else if (!strcasecmp(shell_name, "c")) {
+        return C_SH;
+    } else {
+        return BOURNE;
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -395,7 +407,7 @@ main(int argc, char *argv[])
     int opt_kill = 0;
     int opt_reuse = 0;
     int opt_lifetime = 0;
-    shell_type opt_sh = get_shell();
+    shell_type opt_sh = get_shell_guess();
 
     while ((opt = getopt_long(argc, argv, "+hvcsS:kdqa:rt:",
                               long_options, NULL)) != -1)
@@ -435,13 +447,7 @@ main(int argc, char *argv[])
                 break;
                 
             case 'S':
-                if (!strcasecmp(optarg, "bourne")) {
-                    opt_sh = BOURNE;
-                } else if (!strcasecmp(optarg, "c")) {
-                    opt_sh = C_SH;
-                } else if (!strcasecmp(optarg, "fish")) {
-                    opt_sh = FISH;
-                }
+                opt_sh = parse_shell_option(optarg);
                 break;
 
             case 'k':
