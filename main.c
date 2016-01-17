@@ -381,10 +381,13 @@ parse_shell_option(const char *shell_name)
 {
     if (!strcasecmp(shell_name, "fish")) {
         return FISH;
-    } else if (!strcasecmp(shell_name, "c")) {
+    } else if (!strcasecmp(shell_name, "csh")) {
         return C_SH;
-    } else {
+    } else if (!strcasecmp(shell_name, "sh") ||
+               !strcasecmp(shell_name, "bourne")) {
         return BOURNE;
+    } else {
+        errx(1, "unrecognized shell \"%s\"", shell_name);
     }
 }
 
@@ -417,9 +420,9 @@ main(int argc, char *argv[])
                 printf("Options:\n");
                 printf("  -h, --help     Show this help.\n");
                 printf("  -v, --version  Display version information.\n");
-                printf("  -c             Generate C-shell commands on stdout. This is the default if SHELL looks like it's a csh style of shell.\n");
-                printf("  -s             Generate Bourne shell commands on stdout. This is the default if SHELL does not look like it's a csh style of shell.\n");
-                printf("  -S SHELL       Choose which shell commands to output to stdout. Valid shells are \"C\", \"BOURNE\", \"FISH\". Use this if automatic detection fails.\n");
+                printf("  -c             Generate C-shell commands on stdout.\n");
+                printf("  -s             Generate Bourne shell commands on stdout.\n");
+                printf("  -S SHELL       Generate shell command for \"bourne\", \"csh\", or \"fish\".\n");
                 printf("  -k             Kill the current %s.\n", program_invocation_short_name);
                 printf("  -d             Enable debug mode.\n");
                 printf("  -q             Enable quiet mode.\n");
@@ -445,7 +448,7 @@ main(int argc, char *argv[])
             case 's':
                 opt_sh = BOURNE;
                 break;
-                
+
             case 'S':
                 opt_sh = parse_shell_option(optarg);
                 break;

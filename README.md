@@ -79,16 +79,16 @@ system-wide use.
 
 ## Options
 
-`ssh-pageant` aims to be compatible with `ssh-agent` options:
+`ssh-pageant` aims to be compatible with `ssh-agent` options, with a few extras:
 
     $ ssh-pageant -h
     Usage: ssh-pageant [options] [command [arg ...]]
     Options:
       -h, --help     Show this help.
       -v, --version  Display version information.
-      -c             Generate C-shell commands on stdout. This is the default if SHELL looks like it's a csh style of shell.
-      -s             Generate Bourne shell commands on stdout. This is the default if SHELL does not look like it's a csh style of shell.
-      -S SHELL       Choose which shell commands are outputted to stdout. Valid shells are "C", "BOURNE", "FISH". Use this if automatic detection fails.
+      -c             Generate C-shell commands on stdout.
+      -s             Generate Bourne shell commands on stdout.
+      -S SHELL       Generate shell command for "bourne", "csh", or "fish".
       -k             Kill the current ssh-pageant.
       -d             Enable debug mode.
       -q             Enable quiet mode.

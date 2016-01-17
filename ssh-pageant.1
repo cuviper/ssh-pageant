@@ -34,13 +34,15 @@ Display a summary of options and exit.
 Display version and copyright information and exit.
 .TP
 \fB\-c\fP
-Use C\(hystyle shell commands. This is the default if SHELL looks like it's a csh style of shell. \fB(*)\fP
+Use C\(hystyle shell commands (default for csh-like SHELL). \fB(*)\fP
 .TP
 \fB\-s\fP
-Use Bourne\(hystyle shell commands. This is the default if SHELL does not look like it's a csh style of shell. \fB(*)\fP
+Use Bourne\(hystyle shell commands (default for other SHELL). \fB(*)\fP
 .TP
 \fB\-S\fP \fIshell\fP
-Choose which shell commands to output to stdout. Valid shells are "\fBC\fP", "\fBBOURNE\fP", "\fBFISH\fP". Use this if automatic detection fails.
+Use the specified \fIshell\fP style for commands, overriding the automatic
+SHELL detection.  The currently recognized values are "\fBcsh\fP",
+"\fBfish\fP", and "\fBbourne\fP" or "\fBsh\fP".
 .TP
 \fB\-k\fP
 Kill the current ssh\-pageant process. \fB(*)\fP
