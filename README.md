@@ -150,6 +150,7 @@ finally published the code in April 2009.
 * [MSYS2]: The modern successor to MSYS, staying closer to Cygwin development.
 * [OpenSSH]: The SSH client shipped by Cygwin/MSYS.
 * [Charade]: The friendly competition to ssh-pageant.
+* [weasel-pageant]: ssh-pageant for the Windows Subsystem for Linux.
 
 ------------------------------------------------------------------------------
 Copyright (C) 2009-2014  Josh Stone  
@@ -174,3 +175,4 @@ in the file `COPYING.PuTTY`.
 [MSYS2]: https://msys2.github.io/
 [OpenSSH]: http://www.openssh.com/
 [Charade]: http://github.com/wesleyd/charade
+[weasel-pageant]: https://github.com/vuori/weasel-pageant
