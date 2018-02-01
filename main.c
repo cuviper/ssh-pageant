@@ -372,10 +372,10 @@ output_unset_env(const shell_type opt_sh)
             printf("set -e SSH_PAGEANT_PID;\n");
             break;
         case CMD:
-            // REG delete seems not to be necessary in Win10 but in Win7 and bellow:
+            // REG delete because setx does not do proper clean up:
             // https://stackoverflow.com/questions/13222724/command-line-to-remove-an-environment-variable-from-the-os-level-configuration
-            printf("set SSH_AUTH_SOCK= & setx SSH_AUTH_SOCK \"\" > NUL & REG delete HKCU\Environment /F /V SSH_AUTH_SOCK > NUL 2>&1\n");
-            printf("set SSH_PAGEANT_PID= & setx SSH_PAGEANT_PID \"\" > NUL & REG delete HKCU\Environment /F /V SSH_PAGEANT_PID > NUL 2>&1\n");
+            printf("set SSH_AUTH_SOCK= & setx SSH_AUTH_SOCK \"\" > NUL & REG delete HKCU\\Environment /F /V SSH_AUTH_SOCK > NUL 2>&1\n");
+            printf("set SSH_PAGEANT_PID= & setx SSH_PAGEANT_PID \"\" > NUL & REG delete HKCU\\Environment /F /V SSH_PAGEANT_PID > NUL 2>&1\n");
 
             break;
     }
