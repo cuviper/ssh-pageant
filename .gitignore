@@ -2,3 +2,5 @@
 /*.exe
 /*.o
 /cscope.out
+/*.stackdump
+*~
