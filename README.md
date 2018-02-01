@@ -147,11 +147,12 @@ To uninstall, just remove the copied files:
 
 ## Version History
 
-* 2014-11-23: 1.4 - MSYS support and more robust socket paths.
-* 2013-06-23: 1.3 - Allow reusing existing sockets via `-r`/`--reuse`.
-* 2012-11-24: 1.2 - Mirror the exit status of child processes.
-* 2011-06-12: 1.1 - Fixed SID issues.
-* 2010-09-20: 1.0 - Initial release.
+* 2018-02-01: 1.4-merl1 - Added cmd support and how to add to windows startup.
+* 2014-11-23: 1.4       - MSYS support and more robust socket paths.
+* 2013-06-23: 1.3       - Allow reusing existing sockets via `-r`/`--reuse`.
+* 2012-11-24: 1.2       - Mirror the exit status of child processes.
+* 2011-06-12: 1.1       - Fixed SID issues.
+* 2010-09-20: 1.0       - Initial release.
 
 
 ## Contributions
