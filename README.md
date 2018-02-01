@@ -77,7 +77,10 @@ It may be possible to share a Cygwin socket with external tools like
 both runtimes.  Use `cygpath --windows {path}` to help normalize paths for
 system-wide use.
 
-3. Alternative: run ssh-pageant at Windows start and set environment variables.
+3. **Alternative**: run ssh-pageant at Windows start and set environment variables.
+    
+    In this scenario there is no need for additions to .bashrc or a custom sock
+    path, though you can still use it. 
 
     Create a batch file with the following content:
 
@@ -95,13 +98,14 @@ system-wide use.
 
     To explain:
 
-    * To work around the missing eval in CMD a temporary batch file is populated with the output of `ssh-pageant`. 
-      After execution it will be deleted again.
+    * To work around the missing eval in CMD a temporary batch file is 
+      populated with the output of `ssh-pageant`. After execution it will be 
+      deleted again.
       
       The batchfile is a modified version of [Russell Davis solution for charade](http://russelldavis.blogspot.co.uk/2011/02/using-charade-to-proxy-cygwin-ssh-agent.html).
 
     * `%*` is an alias for "all arguments" so additional arguments can be passed to
-      `ssh-pageant` (e.g. `-k`).
+      `ssh-pageant` (e.g. `-k` or `-a`).
    
    Tested and confirmed to work with Windows 10, cmd.exe, GitBash and Msys2 bash.
  
