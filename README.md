@@ -77,6 +77,34 @@ It may be possible to share a Cygwin socket with external tools like
 both runtimes.  Use `cygpath --windows {path}` to help normalize paths for
 system-wide use.
 
+3. Alternative: run ssh-pageant at Windows start and set environment variables.
+
+    Create a batch file with the following content:
+
+        @echo off
+        REM This BAT is intented to be run from cmd or at windows startup.
+        REM It starts ssh-pageant and sets the environment variables. By doing so all
+        REM newly started shells should inherit the environment variables and there is
+        REM no need to run ssh-pageant in every new shell
+        SET FN=%TEMP%\ssh-agent-init.bat
+        ssh-pageant -S cmd %* > %FN%
+        call %FN%
+        del %FN%
+
+    Now just add this batchfile to you windows startup folder.
+
+    To explain:
+
+    * To work around the missing eval in CMD a temporary batch file is populated with the output of `ssh-pageant`. 
+      After execution it will be deleted again.
+      
+      The batchfile is a modified version of [Russell Davis solution for charade](http://russelldavis.blogspot.co.uk/2011/02/using-charade-to-proxy-cygwin-ssh-agent.html).
+
+    * `%*` is an alias for "all arguments" so additional arguments can be passed to
+      `ssh-pageant` (e.g. `-k`).
+   
+   Tested and confirmed to work with Windows 10, cmd.exe, GitBash and Msys2 bash.
+ 
 ## Options
 
 `ssh-pageant` aims to be compatible with `ssh-agent` options, with a few extras:
@@ -88,7 +116,7 @@ system-wide use.
       -v, --version  Display version information.
       -c             Generate C-shell commands on stdout.
       -s             Generate Bourne shell commands on stdout.
-      -S SHELL       Generate shell command for "bourne", "csh", or "fish".
+      -S SHELL       Generate shell command for "bourne", "csh", "fish" or "cmd".
       -k             Kill the current ssh-pageant.
       -d             Enable debug mode.
       -q             Enable quiet mode.
