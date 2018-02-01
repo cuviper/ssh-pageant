@@ -372,8 +372,8 @@ output_unset_env(const shell_type opt_sh)
             printf("set -e SSH_PAGEANT_PID;\n");
             break;
         case CMD:
-            printf("set SSH_AUTH_SOCK= & setx SSH_AUTH_SOCK "" & REG delete HKCU\Environment /F /V SSH_AUTH_SOCK\n");
-            printf("set SSH_PAGEANT_PID= & setx SSH_PAGEANT_PID "" & REG delete HKCU\Environment /F /V SSH_PAGEANT_PID\n");
+            printf("set SSH_AUTH_SOCK= & setx SSH_AUTH_SOCK \"\" & REG delete HKCU\Environment /F /V SSH_AUTH_SOCK\n");
+            printf("set SSH_PAGEANT_PID= & setx SSH_PAGEANT_PID \"\" & REG delete HKCU\Environment /F /V SSH_PAGEANT_PID\n");
 
             break;
     }
