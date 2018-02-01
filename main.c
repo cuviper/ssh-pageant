@@ -95,13 +95,13 @@ create_socket_path(const shell_type opt_sh, char* sockpath, size_t len)
     char *tempdir; 
 
     if (opt_sh == CMD) {
-        tempdir = malloc(strlen(getenv("TEMP")) + 12);
+        tempdir = malloc(strlen(getenv("USERNAME")) + strlen("C:\\Users\\\\AppData\\Local\\Temp") + 12);
         if(tempdir == NULL) {
             fprintf(stderr, "Memory allocation failed");
             return;
         }
         
-        snprintf(tempdir, strlen(getenv("TEMP")) + 12, "%s/ssh-XXXXXX", getenv("TEMP"));
+        snprintf(tempdir,strlen(getenv("USERNAME")) + strlen("C:\\Users\\\\AppData\\Local\\Temp") + 12, "C:\\Users\\%s\\AppData\\Local\\Temp\\ssh-XXXXXX", getenv("USERNAME"));
     } else {
         tempdir = malloc(strlen("/tmp/ssh-XXXXXX") + 1);
         if(tempdir == NULL) {
@@ -372,8 +372,9 @@ output_unset_env(const shell_type opt_sh)
             printf("set -e SSH_PAGEANT_PID;\n");
             break;
         case CMD:
-            printf("set SSH_AUTH_SOCK=\n");
-            printf("set SSH_PAGEANT_PID=\n");
+            printf("set SSH_AUTH_SOCK= & setx SSH_AUTH_SOCK "" & REG delete HKCU\Environment /F /V SSH_AUTH_SOCK\n");
+            printf("set SSH_PAGEANT_PID= & setx SSH_PAGEANT_PID "" & REG delete HKCU\Environment /F /V SSH_PAGEANT_PID\n");
+
             break;
     }
 }
@@ -399,9 +400,9 @@ output_set_env(const shell_type opt_sh, const int p_set_pid_env, const char *esc
                 printf("set -x SSH_PAGEANT_PID %d;\n", pid);
             break;
         case CMD:
-            printf("set SSH_AUTH_SOCK=%s\n", escaped_sockpath);
+            printf("set SSH_AUTH_SOCK=%s & setx SSH_AUTH_SOCK %s\n", escaped_sockpath, escaped_sockpath);
             if (p_set_pid_env)
-                printf("set SSH_PAGEANT_PID=%d\n", pid);
+                printf("set SSH_PAGEANT_PID=%d & setx SSH_PAGEANT_PID %d\n", pid, pid);
             break;
     }
 }
@@ -454,7 +455,7 @@ main(int argc, char *argv[])
                 printf("  -v, --version  Display version information.\n");
                 printf("  -c             Generate C-shell commands on stdout.\n");
                 printf("  -s             Generate Bourne shell commands on stdout.\n");
-                printf("  -S SHELL       Generate shell command for \"bourne\", \"csh\", or \"fish\".\n");
+                printf("  -S SHELL       Generate shell command for \"bourne\", \"csh\", \"fish\", or \"cmd\".\n");
                 printf("  -k             Kill the current %s.\n", program_invocation_short_name);
                 printf("  -d             Enable debug mode.\n");
                 printf("  -q             Enable quiet mode.\n");
