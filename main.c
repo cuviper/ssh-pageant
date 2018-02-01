@@ -372,8 +372,10 @@ output_unset_env(const shell_type opt_sh)
             printf("set -e SSH_PAGEANT_PID;\n");
             break;
         case CMD:
-            printf("set SSH_AUTH_SOCK= & setx SSH_AUTH_SOCK \"\" & REG delete HKCU\Environment /F /V SSH_AUTH_SOCK\n");
-            printf("set SSH_PAGEANT_PID= & setx SSH_PAGEANT_PID \"\" & REG delete HKCU\Environment /F /V SSH_PAGEANT_PID\n");
+            // REG delete seems not to be necessary in Win10 but in Win7 and bellow:
+            // https://stackoverflow.com/questions/13222724/command-line-to-remove-an-environment-variable-from-the-os-level-configuration
+            printf("set SSH_AUTH_SOCK= & setx SSH_AUTH_SOCK \"\" > NUL & REG delete HKCU\Environment /F /V SSH_AUTH_SOCK > NUL 2>&1\n");
+            printf("set SSH_PAGEANT_PID= & setx SSH_PAGEANT_PID \"\" > NUL & REG delete HKCU\Environment /F /V SSH_PAGEANT_PID > NUL 2>&1\n");
 
             break;
     }
@@ -400,9 +402,9 @@ output_set_env(const shell_type opt_sh, const int p_set_pid_env, const char *esc
                 printf("set -x SSH_PAGEANT_PID %d;\n", pid);
             break;
         case CMD:
-            printf("set SSH_AUTH_SOCK=%s & setx SSH_AUTH_SOCK %s\n", escaped_sockpath, escaped_sockpath);
+            printf("set SSH_AUTH_SOCK=%s & setx SSH_AUTH_SOCK %s > NUL\n", escaped_sockpath, escaped_sockpath);
             if (p_set_pid_env)
-                printf("set SSH_PAGEANT_PID=%d & setx SSH_PAGEANT_PID %d\n", pid, pid);
+                printf("set SSH_PAGEANT_PID=%d & setx SSH_PAGEANT_PID %d > NUL\n", pid, pid);
             break;
     }
 }
