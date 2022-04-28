@@ -12,9 +12,13 @@ DOCS = README.md COPYING COPYING.PuTTY
 OBJS = $(SRCS:.c=.o)
 DEPS = $(OBJS:.o=.d)
 
-.PHONY: clean all install uninstall cscope
+.PHONY: clean all debug install uninstall cscope
 
+all: CFLAGS += -O2
 all: $(PROGRAM)
+
+debug: CFLAGS += -O0 -DDEBUG -g
+debug: $(PROGRAM)
 
 clean:
 	rm -f cscope.out $(PROGRAM) $(OBJS) $(DEPS)
@@ -34,7 +38,8 @@ $(PROGRAM): $(OBJS)
 	$(CC) $(LDFLAGS) $(LOADLIBES) $^ $(LDLIBS) -o $@
 
 CC = gcc
-CFLAGS = -O2 -Werror -Wall -Wextra -MMD
+CFLAGS = -Werror -Wall -Wextra -MMD
+
 
 CSCOPE = $(firstword $(shell which cscope mlcscope 2>/dev/null) false)
 cscope: cscope.out

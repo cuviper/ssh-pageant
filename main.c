@@ -33,7 +33,8 @@
     for (fd = 0; fd < FD_SETSIZE; ++fd) \
         if (FD_ISSET(fd, set))
 
-typedef enum {BOURNE, C_SH, FISH} shell_type;
+
+typedef enum {BOURNE, C_SH, FISH, CMD} shell_type;
 
 struct fd_buf {
     int recv, send;
@@ -89,9 +90,27 @@ cleanup_signal(int sig)
 
 // Create a temporary path for the socket.
 static void
-create_socket_path(char* sockpath, size_t len)
+create_socket_path(const shell_type opt_sh, char* sockpath, size_t len)
 {
-    char tempdir[] = "/tmp/ssh-XXXXXX";
+    char *tempdir; 
+
+    if (opt_sh == CMD) {
+        tempdir = malloc(strlen(getenv("USERNAME")) + strlen("C:\\Users\\\\AppData\\Local\\Temp") + 12);
+        if(tempdir == NULL) {
+            fprintf(stderr, "Memory allocation failed");
+            return;
+        }
+        
+        snprintf(tempdir,strlen(getenv("USERNAME")) + strlen("C:\\Users\\\\AppData\\Local\\Temp") + 12, "C:\\Users\\%s\\AppData\\Local\\Temp\\ssh-XXXXXX", getenv("USERNAME"));
+    } else {
+        tempdir = malloc(strlen("/tmp/ssh-XXXXXX") + 1);
+        if(tempdir == NULL) {
+            fprintf(stderr, "Memory allocation failed");
+            return;
+        }
+        
+        snprintf(tempdir, strlen("/tmp/ssh-XXXXXX") + 1, "/tmp/ssh-XXXXXX");
+    }
     if (!mkdtemp(tempdir))
         cleanup_warn("mkdtemp");
 
@@ -294,7 +313,7 @@ do_agent_loop(int sockfd)
 // Quote and escape a string for shell eval.
 // Caller must free the result.
 static char *
-shell_escape(const char *s)
+shell_escape(const char *s, const shell_type opt_sh)
 {
     // The pessimistic growth is *4, when every character is ' mapped to '\''.
     // (No need to be clever.)  Add room for outer quotes and terminator.
@@ -304,7 +323,8 @@ shell_escape(const char *s)
         return NULL;
 
     char c, *out = mem;
-    *out++ = '\''; // open the string
+    if (opt_sh != CMD)
+        *out++ = '\''; // open the string
     for (c = *s++; c; c = *s++) {
         if (c == '\'') {
             *out++ = '\''; // close,
@@ -315,7 +335,8 @@ shell_escape(const char *s)
         else
             *out++ = c; // plain copy
     }
-    *out++ = '\''; // close the string
+    if (opt_sh != CMD)
+        *out++ = '\''; // close the string
     *out++ = '\0'; // terminate
     return mem;
 }
@@ -350,6 +371,13 @@ output_unset_env(const shell_type opt_sh)
             printf("set -e SSH_AUTH_SOCK;\n");
             printf("set -e SSH_PAGEANT_PID;\n");
             break;
+        case CMD:
+            // REG delete because setx does not do proper clean up:
+            // https://stackoverflow.com/questions/13222724/command-line-to-remove-an-environment-variable-from-the-os-level-configuration
+            printf("set SSH_AUTH_SOCK= & setx SSH_AUTH_SOCK \"\" > NUL & REG delete HKCU\\Environment /F /V SSH_AUTH_SOCK > NUL 2>&1\n");
+            printf("set SSH_PAGEANT_PID= & setx SSH_PAGEANT_PID \"\" > NUL & REG delete HKCU\\Environment /F /V SSH_PAGEANT_PID > NUL 2>&1\n");
+
+            break;
     }
 }
 
@@ -373,6 +401,11 @@ output_set_env(const shell_type opt_sh, const int p_set_pid_env, const char *esc
             if (p_set_pid_env)
                 printf("set -x SSH_PAGEANT_PID %d;\n", pid);
             break;
+        case CMD:
+            printf("set SSH_AUTH_SOCK=%s & setx SSH_AUTH_SOCK %s > NUL\n", escaped_sockpath, escaped_sockpath);
+            if (p_set_pid_env)
+                printf("set SSH_PAGEANT_PID=%d & setx SSH_PAGEANT_PID %d > NUL\n", pid, pid);
+            break;
     }
 }
 
@@ -386,6 +419,8 @@ parse_shell_option(const char *shell_name)
     } else if (!strcasecmp(shell_name, "sh") ||
                !strcasecmp(shell_name, "bourne")) {
         return BOURNE;
+    } else if (!strcasecmp(shell_name, "cmd")) {
+        return CMD;
     } else {
         errx(1, "unrecognized shell \"%s\"", shell_name);
     }
@@ -422,7 +457,7 @@ main(int argc, char *argv[])
                 printf("  -v, --version  Display version information.\n");
                 printf("  -c             Generate C-shell commands on stdout.\n");
                 printf("  -s             Generate Bourne shell commands on stdout.\n");
-                printf("  -S SHELL       Generate shell command for \"bourne\", \"csh\", or \"fish\".\n");
+                printf("  -S SHELL       Generate shell command for \"bourne\", \"csh\", \"fish\", or \"cmd\".\n");
                 printf("  -k             Kill the current %s.\n", program_invocation_short_name);
                 printf("  -d             Enable debug mode.\n");
                 printf("  -q             Enable quiet mode.\n");
@@ -432,7 +467,7 @@ main(int argc, char *argv[])
                 return 0;
 
             case 'v':
-                printf("ssh-pageant 1.4\n");
+                printf("ssh-pageant 1.4-merl1\n");
                 printf("Copyright (C) 2009-2014  Josh Stone\n");
                 printf("License GPLv3+: GNU GPL version 3 or later"
                        " <http://gnu.org/licenses/gpl.html>.\n");
@@ -498,8 +533,12 @@ main(int argc, char *argv[])
         if (kill(pid, SIGTERM) < 0)
             err(1, "kill(%d)", pid);
         output_unset_env(opt_sh);
-        if (!opt_quiet)
-            printf("echo ssh-pageant pid %d killed;\n", pid);
+        if (!opt_quiet) {
+            if (opt_sh == CMD)
+                printf("echo ssh-pageant pid %d killed\n", pid);
+            else
+                printf("echo ssh-pageant pid %d killed;\n", pid);
+        }
         return 0;
     }
 
@@ -516,7 +555,7 @@ main(int argc, char *argv[])
     int p_sock_reused = opt_reuse && reuse_socket_path(sockpath);
     if (!p_sock_reused) {
         if (!sockpath[0])
-            create_socket_path(sockpath, sizeof(sockpath));
+            create_socket_path(opt_sh, sockpath, sizeof(sockpath));
         sockfd = open_auth_socket(sockpath);
     }
 
@@ -543,13 +582,17 @@ main(int argc, char *argv[])
         if (pid < 0)
             cleanup_warn("fork");
         if (pid > 0) {
-            char *escaped_sockpath = shell_escape(sockpath);
+            char *escaped_sockpath = shell_escape(sockpath, opt_sh);
             if (!escaped_sockpath)
                 cleanup_warn("shell_escape");
             output_set_env(opt_sh, p_set_pid_env, escaped_sockpath, pid);
             free(escaped_sockpath);
-            if (p_set_pid_env && !opt_quiet)
-                printf("echo ssh-pageant pid %d;\n", pid);
+            if (p_set_pid_env && !opt_quiet) {
+                if (opt_sh == CMD)
+                    printf("echo ssh-pageant pid %d\n", pid);
+                else
+                    printf("echo ssh-pageant pid %d;\n", pid);
+            }
             if (p_daemonize)
                 return 0;
         }
