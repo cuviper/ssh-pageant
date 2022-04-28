@@ -107,14 +107,18 @@ agent_query(void *buf)
             UnmapViewOfFile(p);
             CloseHandle(filemap);
             LocalFree(psd);
+            psd = NULL;
             free(usersid);
-
+            usersid = NULL;
             if (id > 0)
                 return;
         }
 
+        /* LocalFree and free are fine with NULL, so null checks aren't
+          * necessary. */
         LocalFree(psd);
         free(usersid);
+
     }
 
     static const char reply_error[5] = { 0, 0, 0, 1, SSH_AGENT_FAILURE };
