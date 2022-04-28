@@ -114,10 +114,10 @@ agent_query(void *buf)
                 return;
         }
 
-        if (psd)
-            LocalFree(psd);
-        if (usersid)
-            free(usersid);
+        /* LocalFree and free are fine with NULL, so null checks aren't
+          * necessary. */
+        LocalFree(psd);
+        free(usersid);
 
     }
 
