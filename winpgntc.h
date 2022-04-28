@@ -13,7 +13,13 @@
 
 #include <arpa/inet.h>
 
-#define AGENT_MAX_MSGLEN  8192
+/* OpenSSH uses the same size value:
+ * https://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/ssh-agent.c?rev=1.287&content-type=text/x-cvsweb-markup#:~:text=AGENT_MAX_LEN
+ *
+ * 4 is for the 4 bytes message length field added before the agent
+ * message.
+ */
+#define AGENT_MAX_MSGLEN  ((256*1024)+4)
 
 #if defined(__MSYS__) && !defined(__NEWLIB__)
 // MSYS doesn't have stdint.h or uint32_t,
